@@ -1,0 +1,38 @@
+# Predicate vocabulary - EXECUTION_PLAN.md s4
+# "Phosphorylation is a mechanism, not automatically activation.
+#  Binding, association and process membership have no default causal sign.
+#  Negation is separate from inhibition."
+version: 1
+
+vocabulary:
+  - activates
+  - inhibits
+  - increases_amount
+  - decreases_amount
+  - phosphorylates
+  - dephosphorylates
+  - binds
+  - associated_with
+  - involved_in
+
+# INDRA statement type -> (predicate, effect_sign, causal)
+# effect_sign null means NO SIGN. Never infer a sign from a mechanism type.
+indra_mapping:
+  Activation:       { predicate: activates,         effect_sign: 1,    causal: true,  roles: [subj, obj] }
+  Inhibition:       { predicate: inhibits,          effect_sign: -1,   causal: true,  roles: [subj, obj] }
+  IncreaseAmount:   { predicate: increases_amount,  effect_sign: 1,    causal: true,  roles: [subj, obj] }
+  DecreaseAmount:   { predicate: decreases_amount,  effect_sign: -1,   causal: true,  roles: [subj, obj] }
+  Phosphorylation:  { predicate: phosphorylates,    effect_sign: null, causal: false, roles: [enz, sub] }
+  Dephosphorylation: { predicate: dephosphorylates,  effect_sign: null, causal: false, roles: [enz, sub] }
+  Complex:          { predicate: binds,             effect_sign: null, causal: false, roles: [members] }
+  Association:      { predicate: associated_with,   effect_sign: null, causal: false, roles: [members] }
+
+# Statement types seen in source data but NOT mapped are preserved in raw storage
+# and counted in reports/source_manifest.json as unmapped_statement_types.
+# They never enter the snapshot as claims.
+unmapped_policy: "preserve_and_count"
+
+# Symmetric predicates: canonicalize member order when building the claim key.
+symmetric:
+  - binds
+  - associated_with

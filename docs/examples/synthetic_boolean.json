@@ -1,0 +1,76 @@
+{
+  "id": "synthetic_boolean_v1",
+  "version": "1",
+  "review_version": "synthetic_review_v1",
+  "snapshot_checksum": "synthetic:fixture_v1",
+  "context_id": "demo_context",
+  "reviewer": "software_fixture_not_scientific_review",
+  "synthetic": true,
+  "readout": "c",
+  "variables": [
+    {
+      "id": "a",
+      "entity_id": "DEMO:A",
+      "state": "activity",
+      "initial": 1
+    },
+    {
+      "id": "b",
+      "entity_id": "DEMO:B",
+      "state": "activity",
+      "initial": 1
+    },
+    {
+      "id": "c",
+      "entity_id": "DEMO:C",
+      "state": "activity",
+      "initial": 0
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule_a",
+      "target": "a",
+      "operation": "identity",
+      "regulators": [
+        "a"
+      ],
+      "signs": [],
+      "threshold": 0,
+      "assumption": "A retains its initial value unless clamped.",
+      "claim_ids": []
+    },
+    {
+      "id": "rule_b",
+      "target": "b",
+      "operation": "identity",
+      "regulators": [
+        "a"
+      ],
+      "signs": [],
+      "threshold": 0,
+      "assumption": "B copies A.",
+      "claim_ids": [
+        "demo_ab"
+      ]
+    },
+    {
+      "id": "rule_c",
+      "target": "c",
+      "operation": "not",
+      "regulators": [
+        "b"
+      ],
+      "signs": [],
+      "threshold": 0,
+      "assumption": "C is NOT B.",
+      "claim_ids": [
+        "demo_bc"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Fictional three-variable software model; no biomedical validation.",
+    "Logical steps have no physical duration."
+  ]
+}

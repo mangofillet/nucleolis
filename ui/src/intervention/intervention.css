@@ -1,0 +1,30 @@
+.intervention { min-height: 100vh; background: #0b1018; color: #dce5f1; padding: 28px clamp(18px, 4vw, 64px); font: 15px/1.6 system-ui, sans-serif; }
+.intervention h1, .intervention h2, .intervention h3 { color: #f0f6ff; margin: 0 0 12px; }
+.intervention h1 { font-size: clamp(26px, 3vw, 40px); letter-spacing: -.03em; }
+.intervention small { color: #9bacc4; }
+.intervention p { max-width: 100ch; }
+.iv-header, .iv-result-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.intervention button { cursor: pointer; color: #dfebff; background: #20324d; border: 1px solid #425774; padding: 8px 14px; border-radius: 7px; }
+.intervention button:hover { background: #304867; }
+.intervention button:disabled { opacity: .55; cursor: wait; }
+.iv-form { display: grid; gap: 10px; padding: 20px; border: 1px solid #2a3b52; border-radius: 12px; background: #111b29; }
+.iv-form textarea, .iv-options input:not([type=checkbox]) { color: #eff5ff; background: #080e17; border: 1px solid #425774; border-radius: 6px; padding: 10px; font: inherit; }
+.iv-form textarea { min-height: 76px; resize: vertical; }
+.iv-options { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+.iv-options label { display: flex; align-items: center; gap: 8px; }
+.iv-options input[type=checkbox] { width: 17px; height: 17px; }
+.iv-status { color: #bfcee1; border-left: 3px solid #6485ad; padding: 6px 12px; }
+.iv-error { border-left: 3px solid #f87171; color: #fecaca; padding: 8px 12px; }
+.iv-result-heading { margin-top: 30px; }
+.iv-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr); border: 1px solid #2a3b52; border-radius: 12px; overflow: hidden; }
+.iv-graph { min-width: 0; position: relative; }
+.iv-graph .g3d-wrap { height: 500px; }
+.iv-legend { padding: 0 14px; font-size: 12px; color: #aebed4; }
+.iv-evidence { padding: 20px; max-height: 580px; overflow: auto; background: #111b29; }
+.iv-evidence blockquote { margin: 12px 0; padding-left: 12px; border-left: 2px solid #6485ad; }
+.iv-evidence article { border-bottom: 1px solid #2a3b52; padding: 12px 0; }
+.iv-evidence a { color: #93c5fd; }
+.iv-path { display: block; width: 100%; margin-top: 12px; text-align: left; }
+.iv-synthesis { padding: 24px; background: #111b29; border-radius: 12px; margin-top: 24px; }
+.iv-synthesis button { margin: 4px; font-size: 11px; }
+@media (max-width: 850px) { .iv-grid { grid-template-columns: 1fr; } .iv-header { align-items: start; } .iv-graph .g3d-wrap { height: 360px; } }

@@ -1,0 +1,83 @@
+# Source adapters - EXECUTION_PLAN.md s3
+version: 1
+
+sources:
+  cogex:
+    enabled: true
+    name: "INDRA CoGEx"
+    base_url: "https://discovery.indra.bio/api"
+    auth: none
+    verified_live: "2026-09-12"
+    verified_notes: >
+      833 relations returned for an 18-gene query in 0.59s.
+      get_evidences_for_stmt_hash requires stmt_hash as a STRING (int returns HTTP 415).
+      Evidence records carry: text, pmid, text_refs{PMID,PMCID,DOI}, source_api,
+      source_hash, epistemics. 304/833 relations were signed causal types.
+    license_note: >
+      INDRA content aggregates upstream readers and databases with differing terms.
+      A successful public probe does NOT establish bulk reuse rights.
+      Verify before any redistribution or commercial use.
+    rate_limit_rps: 3
+    endpoints:
+      genes_for_disease: "/get_genes_for_disease"
+      subnetwork_meta: "/indra_subnetwork_meta"
+      evidences_for_hash: "/get_evidences_for_stmt_hash"
+
+  omnipath:
+    enabled: false
+    name: "OmniPath"
+    base_url: "https://omnipathdb.org"
+    auth: none
+    license_note: "Originating resource licenses apply; commercial-use filtering supported."
+    status: "deferred - adapter interface reserved, not implemented in the 3h slice"
+
+  signor:
+    enabled: false
+    name: "SIGNOR"
+    license_note: "SIGNOR 4.0 page lists CC BY 4.0; pin and verify the downloaded release."
+    status: "deferred"
+
+  pubmed:
+    enabled: false
+    name: "PubMed E-utilities"
+    rate_limit_rps: 3
+    status: "deferred - no key; requires tool/email metadata and backoff"
+
+  amass:
+    enabled: false
+    name: "AMASS BiomedCore"
+    base_url: "https://api.amass.tech/api/v1"
+    auth: bearer
+    env_var: "AMASS_API_KEY"
+    verified_live: "2026-09-12"
+    verified_notes: >
+      Key authenticates (HTTP 200). Credit balance 50,490 at time of check.
+      Cost measured empirically: 1 credit per CALL, independent of batch size -
+      a 5-PMID lookup cost the same 1 credit as a single-record GET.
+      OpenAPI spec at /api/doc/openapi.json, 23 endpoints, 6 cores
+      (biomedcore, drugcore, genecore, patentcore, regulatorycore, trialcore).
+    endpoints:
+      records_search: "/cores/biomedcore/records"      # GET, requires `query`
+      records_lookup: "/cores/biomedcore/records/lookup"  # POST {items:[{pmid}|{doi}]} -> amassIds only
+      record_by_id: "/cores/biomedcore/records/{amassId}"  # GET, full record
+      credits: "/credits/api-credits"
+    record_fields_verified:
+      - pmid, pmcid, doi
+      - publicationDate        # ISO day precision - fills our missing-date gap
+      - isRetracted            # fills documents.retraction_status
+      - publicationTypes       # fills documents.publication_type
+      - journal, issn, volumeIssue, authors, language
+      - meshTerms, substances, keywords
+      - citationCount, journalQualityJufo, hasFulltext
+    search_filters_verified:
+      - minPublicationDate / maxPublicationDate   # makes the s7 temporal cutoff feasible
+      - minCitationCount, minJournalQualityJufo, isRetracted
+      - authorOrcids, authorNames, institutionRors, institutionNames
+    integration_shape: >
+      Two steps: POST records/lookup with a batch of PMIDs returns amassIds only,
+      then GET records/{amassId} per record for the metadata. Estimated cost to
+      date all 2,916 snapshot documents: ~2,950 credits (~6% of the balance).
+    unresolved: >
+      Reuse and redistribution rights are NOT established. A working API key
+      proves access, not permission to store or republish. Confirm terms before
+      any export or public hosting. Adapter stays disabled until then.

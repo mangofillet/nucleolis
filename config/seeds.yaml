@@ -1,0 +1,37 @@
+# Human seed set - EXECUTION_PLAN.md s1
+# Versioned, reviewed list. Expansion cap: 150 genes, each with a recorded rationale.
+version: 1
+recorded_at: "2026-09-12"
+disease_focus: "ALS/FTD"
+selection_rationale: >
+  Initial seed set supplied in EXECUTION_PLAN.md s1 as the core ALS/FTD genetic
+  loci. Not derived from any automated ranking. Expansion beyond this set
+  requires a recorded rationale per gene and a version bump.
+
+seeds:
+  - symbol: TARDBP
+    hgnc_id: "11571"
+    rationale: "TDP-43 proteinopathy; defining pathology of sporadic ALS and FTLD-TDP"
+  - symbol: C9orf72
+    hgnc_id: "28337"
+    rationale: "Most common genetic cause of familial ALS and FTD (repeat expansion)"
+  - symbol: FUS
+    hgnc_id: "4010"
+    rationale: "RNA-binding protein; ALS-FUS, juvenile-onset forms"
+  - symbol: SOD1
+    hgnc_id: "11179"
+    rationale: "First identified ALS gene; established toxic gain-of-function model"
+  - symbol: TBK1
+    hgnc_id: "11584"
+    rationale: "Autophagy/innate immune kinase; ALS-FTD loss-of-function variants"
+  - symbol: OPTN
+    hgnc_id: "17142"
+    rationale: "Autophagy receptor; ALS variants, converges with TBK1 biology"
+  - symbol: SQSTM1
+    hgnc_id: "11280"
+    rationale: "p62 autophagy receptor; ALS/FTD and Paget disease variants"
+
+# Resolution policy: hgnc_id values above are asserted from the seed brief and
+# MUST be verified against the HGNC REST API during A4 before use as node IDs.
+# A mismatch is a hard failure, not a silent correction.
+verify_ids_against: "https://rest.genenames.org/fetch/symbol/{symbol}"

@@ -1,0 +1,62 @@
+{
+  "version": "synthetic_review_v1",
+  "snapshot_id": "synthetic_sandwich_v1",
+  "snapshot_checksum": "synthetic:fixture_v1",
+  "context_id": "demo_context",
+  "synthetic": true,
+  "selected_entity_ids": [
+    "DEMO:A",
+    "DEMO:B",
+    "DEMO:C"
+  ],
+  "reviews": [
+    {
+      "evidence_id": "e_demo_ab",
+      "claim_id": "demo_ab",
+      "approved": true,
+      "source_checked": true,
+      "context_compatible": true,
+      "reviewer": "software_fixture_not_scientific_review",
+      "statement_hashes": [
+        "stmt_demo_ab"
+      ]
+    },
+    {
+      "evidence_id": "e_demo_bc",
+      "claim_id": "demo_bc",
+      "approved": true,
+      "source_checked": true,
+      "context_compatible": true,
+      "reviewer": "software_fixture_not_scientific_review",
+      "statement_hashes": [
+        "stmt_demo_bc"
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "claim_id": "demo_ab",
+      "source_state": "activity",
+      "target_state": "activity",
+      "assumption": "Fictional binary activity variables; not a biological assertion."
+    },
+    {
+      "claim_id": "demo_bc",
+      "source_state": "activity",
+      "target_state": "activity",
+      "assumption": "Fictional binary activity variables; not a biological assertion."
+    }
+  ],
+  "statements": [
+    {
+      "statement_hash": "stmt_demo_ab",
+      "statement_type": "Activation",
+      "belief": 0.8
+    },
+    {
+      "statement_hash": "stmt_demo_bc",
+      "statement_type": "Inhibition",
+      "belief": 0.8
+    }
+  ]
+}

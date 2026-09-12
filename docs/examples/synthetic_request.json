@@ -1,0 +1,9 @@
+{
+  "query": "What happens to Reporter C if I knock out Switch A?",
+  "snapshot_id": null,
+  "context_id": "demo_context",
+  "method": "illustrative_boolean",
+  "boolean_model_id": "synthetic_boolean_v1",
+  "exclude_publication_ids": [],
+  "demo": true
+}

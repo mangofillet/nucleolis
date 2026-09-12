@@ -1,0 +1,417 @@
+{
+  "schema_version": 1,
+  "request_id": "d6934c55-9da4-4cbd-8f36-9ceef5c48847",
+  "status": "completed",
+  "snapshot": {
+    "id": "synthetic_sandwich_v1",
+    "schema_version": 1,
+    "checksum": "synthetic:fixture_v1"
+  },
+  "analysis_version": "qualitative_v1",
+  "review_manifest_version": "synthetic_review_v1",
+  "rule_model_version": "1",
+  "method": "illustrative_boolean",
+  "synthetic": true,
+  "parsed_query": {
+    "source_entity": {
+      "mention": "Switch A",
+      "candidate_id": "DEMO:A",
+      "resolution": "matched"
+    },
+    "target_entity": {
+      "mention": "Reporter C",
+      "candidate_id": "DEMO:C",
+      "resolution": "matched"
+    },
+    "query_intent": "intervention",
+    "intervention": "knockout",
+    "desired_readout_direction": null,
+    "context_text": null,
+    "clarification_reason": null
+  },
+  "grounded_query": {
+    "source_id": "DEMO:A",
+    "target_id": "DEMO:C",
+    "intervention_direction": -1,
+    "source_state_id": "activity",
+    "target_state_id": "activity",
+    "context_id": "demo_context"
+  },
+  "analysis": {
+    "baseline": {
+      "category": "not_requested",
+      "completion": "complete_within_limits",
+      "paths": [
+        {
+          "id": "path_92db10a3a9fcbc6eaa3b",
+          "node_ids": [
+            "DEMO:A",
+            "DEMO:B",
+            "DEMO:C"
+          ],
+          "claim_ids": [
+            "demo_ab",
+            "demo_bc"
+          ],
+          "evidence_ids": [
+            "e_demo_ab",
+            "e_demo_bc"
+          ],
+          "implied_direction": 1,
+          "belief_score": 0.8
+        }
+      ],
+      "directions": [
+        {
+          "node_id": "DEMO:B",
+          "possible_directions": [
+            -1
+          ]
+        },
+        {
+          "node_id": "DEMO:C",
+          "possible_directions": [
+            1
+          ]
+        }
+      ],
+      "examined_candidates": 2,
+      "total_paths": 1,
+      "display_paths_omitted": 0
+    },
+    "after_exclusion": null,
+    "exclusion_effect": "not_requested",
+    "boolean": {
+      "baseline": {
+        "completion": "fixed_point",
+        "trajectory": [
+          {
+            "step": 0,
+            "values": {
+              "a": 1,
+              "b": 1,
+              "c": 0
+            }
+          },
+          {
+            "step": 1,
+            "values": {
+              "a": 1,
+              "b": 1,
+              "c": 0
+            }
+          }
+        ],
+        "terminal": {
+          "a": 1,
+          "b": 1,
+          "c": 0
+        }
+      },
+      "perturbed": {
+        "completion": "fixed_point",
+        "trajectory": [
+          {
+            "step": 0,
+            "values": {
+              "a": 0,
+              "b": 1,
+              "c": 0
+            }
+          },
+          {
+            "step": 1,
+            "values": {
+              "a": 0,
+              "b": 0,
+              "c": 0
+            }
+          },
+          {
+            "step": 2,
+            "values": {
+              "a": 0,
+              "b": 0,
+              "c": 1
+            }
+          },
+          {
+            "step": 3,
+            "values": {
+              "a": 0,
+              "b": 0,
+              "c": 1
+            }
+          }
+        ],
+        "terminal": {
+          "a": 0,
+          "b": 0,
+          "c": 1
+        }
+      },
+      "flips": [
+        {
+          "variable_id": "a",
+          "entity_id": "DEMO:A",
+          "before": 1,
+          "after": 0
+        },
+        {
+          "variable_id": "b",
+          "entity_id": "DEMO:B",
+          "before": 1,
+          "after": 0
+        },
+        {
+          "variable_id": "c",
+          "entity_id": "DEMO:C",
+          "before": 0,
+          "after": 1
+        }
+      ],
+      "rules": [
+        {
+          "id": "rule_a",
+          "target": "a",
+          "operation": "identity",
+          "regulators": [
+            "a"
+          ],
+          "signs": [],
+          "threshold": 0,
+          "assumption": "A retains its initial value unless clamped.",
+          "claim_ids": []
+        },
+        {
+          "id": "rule_b",
+          "target": "b",
+          "operation": "identity",
+          "regulators": [
+            "a"
+          ],
+          "signs": [],
+          "threshold": 0,
+          "assumption": "B copies A.",
+          "claim_ids": [
+            "demo_ab"
+          ]
+        },
+        {
+          "id": "rule_c",
+          "target": "c",
+          "operation": "not",
+          "regulators": [
+            "b"
+          ],
+          "signs": [],
+          "threshold": 0,
+          "assumption": "C is NOT B.",
+          "claim_ids": [
+            "demo_bc"
+          ]
+        }
+      ],
+      "assumptions": [
+        "Fictional three-variable software model; no biomedical validation.",
+        "Logical steps have no physical duration."
+      ]
+    }
+  },
+  "evidence_assessment": {
+    "method": "statement_bottleneck_v1",
+    "unique_statement_count": 2,
+    "scored_statement_count": 2,
+    "belief_coverage": 1.0,
+    "weakest_belief": 0.8,
+    "distinct_publication_count": 2,
+    "reviewed_evidence_count": 2,
+    "limitations": [
+      "Statement belief is not a treatment probability; publications are not independent studies."
+    ]
+  },
+  "synthesis": {
+    "biological_rationale": [],
+    "confidence_assessment": "Synthetic software fixture; example scores are invented test inputs, not scientific confidence.",
+    "assumptions": [
+      "This draft is a fixture, not a Claude response."
+    ],
+    "limitations": [
+      "No biological interpretation or wet-lab protocol is supported by fictional variables."
+    ],
+    "validation_protocol": null
+  },
+  "synthesis_status": "generated",
+  "nodes": [
+    {
+      "id": "DEMO:A",
+      "name": "Switch A",
+      "kind": "process",
+      "focus": true,
+      "degree": 1,
+      "group": "process",
+      "state": "off",
+      "state_kind": "boolean",
+      "modeled_state_id": "a",
+      "baseline_state": 1,
+      "perturbed_state": 0,
+      "meta": {
+        "identifier": "DEMO:A",
+        "description": "Fictional Boolean fixture variable",
+        "taxon": null
+      }
+    },
+    {
+      "id": "DEMO:B",
+      "name": "Mediator B",
+      "kind": "process",
+      "focus": false,
+      "degree": 2,
+      "group": "process",
+      "state": "off",
+      "state_kind": "boolean",
+      "modeled_state_id": "b",
+      "baseline_state": 1,
+      "perturbed_state": 0,
+      "meta": {
+        "identifier": "DEMO:B",
+        "description": "Fictional Boolean fixture variable",
+        "taxon": null
+      }
+    },
+    {
+      "id": "DEMO:C",
+      "name": "Reporter C",
+      "kind": "process",
+      "focus": false,
+      "degree": 1,
+      "group": "process",
+      "state": "on",
+      "state_kind": "boolean",
+      "modeled_state_id": "c",
+      "baseline_state": 0,
+      "perturbed_state": 1,
+      "meta": {
+        "identifier": "DEMO:C",
+        "description": "Fictional Boolean fixture variable",
+        "taxon": null
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "demo_ab",
+      "source": "DEMO:A",
+      "target": "DEMO:B",
+      "predicate": "activates",
+      "sign": 1,
+      "papers": 1,
+      "sentences": 1,
+      "primary": null,
+      "retracted": 0,
+      "soleSupportRetracted": false,
+      "belief": 0.8,
+      "belief_score": 0.8,
+      "belief_method": "minimum_statement_belief",
+      "statement_refs": [
+        {
+          "statement_hash": "stmt_demo_ab",
+          "statement_type": "Activation",
+          "belief": 0.8
+        }
+      ],
+      "evidence_ids": [
+        "e_demo_ab"
+      ],
+      "publication_ids": [
+        "DEMO-PAPER:demo_ab"
+      ],
+      "eligible": true,
+      "exclusion_reason": null
+    },
+    {
+      "id": "demo_bc",
+      "source": "DEMO:B",
+      "target": "DEMO:C",
+      "predicate": "inhibits",
+      "sign": -1,
+      "papers": 1,
+      "sentences": 1,
+      "primary": null,
+      "retracted": 0,
+      "soleSupportRetracted": false,
+      "belief": 0.8,
+      "belief_score": 0.8,
+      "belief_method": "minimum_statement_belief",
+      "statement_refs": [
+        {
+          "statement_hash": "stmt_demo_bc",
+          "statement_type": "Inhibition",
+          "belief": 0.8
+        }
+      ],
+      "evidence_ids": [
+        "e_demo_bc"
+      ],
+      "publication_ids": [
+        "DEMO-PAPER:demo_bc"
+      ],
+      "eligible": true,
+      "exclusion_reason": null
+    }
+  ],
+  "evidence": [
+    {
+      "id": "e_demo_ab",
+      "claim_id": "demo_ab",
+      "statement_hashes": [
+        "stmt_demo_ab"
+      ],
+      "publication_id": "DEMO-PAPER:demo_ab",
+      "publication_url": null,
+      "quote": "FICTIONAL TEST ASSERTION: DEMO:A activates DEMO:B.",
+      "context_id": "demo_context",
+      "review_status": "approved",
+      "source_api": "synthetic_fixture"
+    },
+    {
+      "id": "e_demo_bc",
+      "claim_id": "demo_bc",
+      "statement_hashes": [
+        "stmt_demo_bc"
+      ],
+      "publication_id": "DEMO-PAPER:demo_bc",
+      "publication_url": null,
+      "quote": "FICTIONAL TEST ASSERTION: DEMO:B inhibits DEMO:C.",
+      "context_id": "demo_context",
+      "review_status": "approved",
+      "source_api": "synthetic_fixture"
+    }
+  ],
+  "limits": {
+    "max_nodes": 40,
+    "max_edges": 500,
+    "max_hops": 2,
+    "candidate_budget": 5000,
+    "display_paths": 5,
+    "graph_seconds": 1.0,
+    "boolean_steps": 20
+  },
+  "truncation": {
+    "nodes": false,
+    "edges": false,
+    "search": false,
+    "evidence_bundle": false,
+    "display_paths_omitted": 0
+  },
+  "warnings": [
+    "SYNTHETIC SOFTWARE DEMO: fictional entities, citations, and scores; not biomedical evidence.",
+    "Provider responses are explicit software fixtures, not live LLM calls."
+  ],
+  "errors": [],
+  "provenance": {
+    "parser_model": "synthetic_fixture_parser",
+    "synthesis_model": "synthetic_fixture_synthesis",
+    "prompt_version": "sandwich_v1"
+  }
+}

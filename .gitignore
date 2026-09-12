@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.local
+
+# data artefacts (raw caches, normalized parquet/json, snapshots)
+data/
+reports/quality/
+reports/temporal/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# node
+ui/node_modules/
+ui/dist/
+
+# playwright verification output
+ui/.playwright-mcp/
