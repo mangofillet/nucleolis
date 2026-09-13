@@ -2,13 +2,16 @@
 
 Work done on top of `0xIkra/nucleolis` @ `2a06bad`. Two themes: **widen the scope
 from ALS/FTD to brain ageing**, and **reskin to the Nucleolis brand**. Along the
-way four upstream bugs turned up; they are described below with the evidence.
+way six upstream bugs turned up; they are described below with the evidence.
 
 Assisted by Claude Code.
 
 ---
 
 ## 1. Bugs found in the existing pipeline
+
+Four were found in the original pipeline (1.1-1.4); two more surfaced later and
+are in section 8 of this document (nameless entities, hardcoded view ceilings).
 
 ### 1.1 The batch evidence endpoint was written but never called
 
@@ -101,17 +104,23 @@ cognitive ageing. Size was not the goal.
 
 ### Effect
 
+Shipped snapshot is `brain_ageing_v3`: 593-node universe queried, 587 with at
+least one relation.
+
 | | before | after |
 |---|---|---|
-| Entities | 32 | 414 → ~870 |
-| Claims | 669 | 61,294 |
-| Documents | 2,916 | 279,913 |
-| Evidence records | 6,373 | 678,363 |
-| Negated evidence | 0 | **116** |
+| Entities | 32 | **587** |
+| Claims | 669 | **101,120** (81,030 signed) |
+| Documents | 2,916 | **371,752** |
+| Evidence records | 6,373 | **950,365** (319,572 stored at build cap 10) |
+| Negated evidence | 0 | **161** |
+| Max `support_count` | — | 5,273 |
 
-That last row matters: `KNOWN_LIMITATIONS.md` §8 says negation is "implemented but
-untested against real data" because the old snapshot had zero negated records.
-It now has 116, so that path is exercised for the first time.
+Snapshot is 528MB and builds in well under a minute from normalized data.
+
+The negated-evidence row matters: `KNOWN_LIMITATIONS.md` §8 says negation is
+"implemented but untested against real data" because the old snapshot had zero
+negated records. It now has 161, so that path is exercised for the first time.
 
 ---
 
@@ -206,17 +215,21 @@ is the easiest place to quietly break them:
 
 Sample output against the 414-entity snapshot:
 
+259 crossing claims against `brain_ageing_v3`. Top by support:
+
 | | | direction | basis | support |
 |---|---|---|---|---|
+| SQSTM1 | → NFE2L2 | increases | dominant | 657↑ / 143↓ |
+| NFE2L2 | → SQSTM1 | increases | dominant | 323↑ / 33↓ |
+| SIRT1 | → NFE2L2 | increases | dominant | 259↑ / 56↓ |
 | SIRT1 | → NLRP3 | decreases | dominant | 44↑ / 124↓ |
-| SIRT3 | → NLRP3 | decreases | dominant | 17↑ / 51↓ |
-| SIRT1 | → CDKN2A | decreases | dominant | 15↑ / 41↓ |
-| MTOR | → NLRP3 | increases | dominant | 33↑ / 17↓ |
-| IGF1 | → TERT | increases | dominant | 32↑ / 1↓ |
-| SIRT1 | → TERT | *none* | contested | 27↑ / 18↓ |
+| KL | → IGF1 | decreases | dominant | 20↑ / 83↓ |
+| PPARGC1A | → NFE2L2 | increases | dominant | 84↑ / 4↓ |
 
-The sirtuin→inflammasome and sirtuin→p16 axes surfacing as the best-supported
-crossing claims is the expected answer for cognitive-ageing biology.
+p62→NRF2, sirtuin→inflammasome, klotho⊣IGF1 and PGC-1α→NRF2 are all expected
+cognitive-ageing biology, which is a reasonable sign the projection is not
+scrambled. Note that every one of the NFE2L2 rows was invisible before the
+nameless-entity fix in §8.5.
 
 ---
 
