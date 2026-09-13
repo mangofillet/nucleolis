@@ -118,10 +118,17 @@ class Snapshot:
         return results
 
     def claim_view(self, claim_id: str) -> dict:
+        # Local import: nucleolus.analysis imports this module, so the package edge stays one-way.
+        from nucleolus.analysis.sources import classify
+
         claim = self.claims[claim_id]
         subject = self.entities[claim["subject_id"]]
         obj = self.entities[claim["object_id"]]
+        provenance = classify(claim.get("source_counts"))
         return {
+            "source_class": provenance["source_class"],
+            "source_class_label": provenance["source_class_label"],
+            "curated_sources": provenance["database_sources"],
             "claim_id": claim["id"],
             "subject": {"id": subject["id"], "name": subject.get("preferred_name")},
             "predicate": claim["predicate"],

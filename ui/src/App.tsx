@@ -616,6 +616,7 @@ export default function App() {
                   {evidence.claim.negated && <span className="badge badge--neg">negated</span>}
                   <span className="badge">{evidence.claim.support_count} papers</span>
                   <span className="badge">{evidence.total} extracted sentences</span>
+                  <span className="badge">{evidence.claim.source_class_label}</span>
                   <span className="badge badge--warn">unreviewed</span>
                 </div>
                 {evidence.claim.source_counts && (

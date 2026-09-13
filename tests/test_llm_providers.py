@@ -73,6 +73,7 @@ def test_claude_actual_sdk_schema_and_failures(case):
     def handler(request):
         body = json.loads(request.content)
         assert body["output_config"]["format"]["type"] == "json_schema"
+        assert body["output_config"]["effort"] == "medium"
         if case == "timeout":
             raise httpx.ReadTimeout("fixture timeout", request=request)
         if case == "http_error":

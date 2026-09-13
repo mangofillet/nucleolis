@@ -99,7 +99,22 @@ export default function InterventionView({ onExit }: { onExit: () => void }) {
           </button>)}
         </aside>
       </div>}
-      {result.evidence_assessment && <p className="iv-status">Belief coverage: {result.evidence_assessment.belief_coverage == null ? "unavailable" : `${Math.round(result.evidence_assessment.belief_coverage * 100)}% of known statements`} · Weakest observed belief: {result.evidence_assessment.weakest_belief ?? "unavailable"}. Statement belief is not therapeutic success probability.</p>}
+      {result.evidence_assessment && <p className="iv-status">Where this comes from: {result.evidence_assessment.curated_database_claims} of {result.links.length} claims have curated-database support · {result.evidence_assessment.machine_read_claims} are machine-read text only · {result.evidence_assessment.multi_source_claims} have more than one source.
+        {" "}<small>INDRA belief (weakest {result.evidence_assessment.weakest_belief ?? "unavailable"}, coverage {result.evidence_assessment.belief_coverage == null ? "unavailable" : `${Math.round(result.evidence_assessment.belief_coverage * 100)}%`}) scores statement assembly, not correctness: it tracks which reader extracted the sentence, and on this corpus it does not separate extraction faults from genuine disagreement. Read the quote.</small></p>}
+      {result.amass_corroboration.status !== "not_requested" && <section className="iv-status">
+        <p><strong>Corroboration · {result.amass_corroboration.mode.replaceAll("_", " ")}</strong>: {result.amass_corroboration.status} · {result.amass_corroboration.claims_assessed} claims assessed · {result.amass_corroboration.calls_used} calls · policy {result.amass_corroboration.review_policy.replaceAll("_", " ")}
+          {result.amass_corroboration.from_cache && ` · from cache${result.amass_corroboration.retrieved_at ? ` (${result.amass_corroboration.retrieved_at})` : ""}`}
+          {result.amass_corroboration.truncated && " · search truncated"}</p>
+        {result.amass_corroboration.corroborations.map((c) => <article key={c.claim_id}>
+          <p><button onClick={() => setSelected(c.claim_id)}>{c.claim_id}</button> {c.status.replaceAll("_", " ")} · {c.distinct_publication_families} distinct publication families · {c.distinct_primary_study_count} qualifying primary studies · {c.source_pipeline_classes.map((s) => s.replaceAll("_", " ")).join(" + ") || "no pipeline recorded"}</p>
+          {c.cross_indexed_publication_ids.length > 0 && <p><small>Cross-indexed, already cited by INDRA — not corroboration: {c.cross_indexed_publication_ids.join(", ")}</small></p>}
+          {c.passages.map((p) => <blockquote key={p.id}>{p.quote}
+            <footer><small>{p.publication_id} · {p.stance.replaceAll("_", " ")} · context {p.context_match} · {p.evidence_role.replaceAll("_", " ")} · {p.review_status}</small></footer></blockquote>)}
+          {c.documents.filter((d) => d.is_retracted === true).map((d) => <p key={d.amass_id} role="status"><small>Retracted: {d.title ?? d.amass_id} — shown, never counted as corroboration</small></p>)}
+          {c.limitations.map((l) => <p key={l}><small>{l}</small></p>)}
+        </article>)}
+        {result.amass_corroboration.warnings.map((w) => <p key={w}><small>{w}</small></p>)}
+      </section>}
       {result.synthesis && <section className="iv-synthesis"><h2>{result.synthetic ? "Fixture draft" : "Generated research draft · requires review"}</h2>
         {result.synthesis.biological_rationale.map((r, i) => <p key={i}>{r.text} <small>({r.basis.replaceAll("_", " ")})</small>
           {r.claim_ids.map((id) => <button key={id} onClick={() => setSelected(id)}>Inspect {id}</button>)}</p>)}

@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8077";
+const BASE = import.meta.env.VITE_API_BASE ?? "";
 
 export interface EntityRef {
   id: string;
@@ -26,6 +26,9 @@ export interface ClaimView {
   evidence_ids: string[];
   source_statement_hash: string | null;
   source_counts: Record<string, number> | null;
+  source_class: "curated_database" | "machine_read" | "mixed" | "unknown";
+  source_class_label: string;
+  curated_sources: string[];
   indra_statement_type: string | null;
 }
 
@@ -206,8 +209,8 @@ export const api = {
         `&min_papers=${opts.minPapers}` +
         (opts.targetId ? `&target_id=${encodeURIComponent(opts.targetId)}` : ""),
     ),
-  evidence: (claimId: string) =>
-    get<EvidenceResponse>(`/edges/${encodeURIComponent(claimId)}/evidence?limit=100`),
+  evidence: (claimId: string, offset = 0) =>
+    get<EvidenceResponse>(`/edges/${encodeURIComponent(claimId)}/evidence?limit=100&offset=${offset}`),
   exportUrl: (nodeId: string, maxNodes: number) =>
     `${BASE}/exports/graph?node_id=${encodeURIComponent(nodeId)}&max_nodes=${maxNodes}`,
 };

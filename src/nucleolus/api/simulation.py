@@ -41,6 +41,18 @@ def capabilities(settings: Settings = Depends(settings_dependency)):
         "boolean_manifest_configured": settings.boolean_path is not None,
         "pybel_available": bel_adapter.available(),
         "synthetic_demo_enabled": settings.demo_enabled,
+        "exploratory_mode_enabled": settings.exploratory_enabled and review is None,
+        # Configured means a key is present, never that a live call succeeded. No key or balance here.
+        "amass_configured": bool(settings.amass_api_key.get_secret_value()),
+        "amass_enabled": settings.amass_enabled,
+        "amass_allowed_modes": (["disabled"] if not settings.amass_enabled
+                                else ["disabled", "cached", "live"] if settings.amass_mode == "live"
+                                else ["disabled", "cached"]),
+        "amass_max_claims": settings.amass_max_claims,
+        "amass_max_search_results": settings.amass_max_search_results,
+        "amass_include_fulltext": settings.amass_include_fulltext,
+        "review_policy": settings.review_policy,
+        "path_ranking": settings.path_ranking,
         "demo_query": demo.DEMO_QUERY,
     }
 

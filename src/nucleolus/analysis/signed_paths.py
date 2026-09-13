@@ -8,7 +8,7 @@ from nucleolus.schemas.simulation import DirectionResult, GroundedQuery, Limits,
 
 
 def analyze(graph: AnalysisGraph, query: GroundedQuery, desired: int | None,
-            limits: Limits | None = None) -> PathAnalysis:
+            limits: Limits | None = None, ranking: str = "support") -> PathAnalysis:
     limits = limits or Limits()
     deadline = time.monotonic() + limits.graph_seconds
     adjacency = {}
@@ -49,9 +49,20 @@ def analyze(graph: AnalysisGraph, query: GroundedQuery, desired: int | None,
     effects = directions.get(query.target_id, set())
     category = ("insufficient_evidence" if not effects else "not_requested" if desired is None else
                 "conflicting" if len(effects) == 2 else "supportive_only" if desired in effects else "opposing_only")
+    # Rank by the weakest supporting step, as the pathway view does. Belief only breaks ties:
+    # measured on this corpus it tracks the extracting reader, not whether a claim holds.
+    papers = {link.id: link.papers for link in graph.links}
+
+    def rank(path):
+        belief = (path.belief_score is None, -(path.belief_score or 0), path.id)
+        if ranking == "belief":
+            return belief
+        weakest = min(papers.get(cid, 0) for cid in path.claim_ids)
+        return (-weakest, *belief)
+
     # Stable interleaving makes both signs visible even with the five-path display cap.
-    buckets = {sign: sorted((p for p in paths if p.implied_direction == sign),
-                           key=lambda p: (p.belief_score is None, -(p.belief_score or 0), p.id)) for sign in (-1, 1)}
+    buckets = {sign: sorted((p for p in paths if p.implied_direction == sign), key=rank)
+               for sign in (-1, 1)}
     ordered = []
     for i in range(max(len(b) for b in buckets.values())):
         for sign in (-1, 1):

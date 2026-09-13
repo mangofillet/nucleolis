@@ -22,16 +22,42 @@ def validate_citations(synthesis, bundle):
              if result for p in result["paths"]}
     boolean_result = bundle["analysis"].get("boolean")
     rules = {r["id"]: r for r in boolean_result["rules"]} if boolean_result else {}
+    corroborations = (bundle.get("amass_corroboration") or {}).get("corroborations") or []
+    amass_documents = {d["amass_id"] for c in corroborations for d in c.get("documents") or []}
+    amass_passages = {}
+    for corroboration in corroborations:
+        for passage in corroboration.get("passages") or []:
+            if passage.get("claim_id", corroboration["claim_id"]) != corroboration["claim_id"]:
+                raise ValueError("Corroboration contains a passage from another claim.")
+            amass_passages[passage["id"]] = {"claim_id": corroboration["claim_id"]} | passage
+    dropped = 0
     for item in synthesis.biological_rationale:
+        # A corroboration ID that is not in the bundle cites nothing, so drop it and
+        # disclose it. The mechanistic references below stay strictly validated.
+        for field, known in (("amass_document_ids", amass_documents), ("amass_passage_ids", amass_passages.keys())):
+            cited = getattr(item, field)
+            kept = [value for value in cited if value in known]
+            if len(kept) != len(cited):
+                dropped += len(cited) - len(kept)
+                setattr(item, field, kept)
         if (set(item.claim_ids) - claims.keys() or set(item.evidence_ids) - evidence.keys()
                 or set(item.path_ids) - paths.keys() or set(item.rule_ids) - rules.keys()):
             raise ValueError("Synthesis references an identifier outside its evidence bundle.")
+        for passage_id in item.amass_passage_ids:
+            passage = amass_passages[passage_id]
+            if passage["claim_id"] not in item.claim_ids:
+                raise ValueError("Synthesis cites a corroboration passage from another claim.")
+            # Retrieval is not support: mention-only or unclear passages cannot carry an evidence claim.
+            if item.basis == "evidence" and passage.get("stance") not in {"supports", "opposes"}:
+                raise ValueError("Synthesis presents a non-relational corroboration passage as evidence.")
         if any(evidence[e]["claim_id"] not in item.claim_ids for e in item.evidence_ids):
             raise ValueError("Synthesis evidence does not belong to its cited claims.")
         if item.path_ids and any(not set(item.claim_ids).issubset(paths[p]["claim_ids"]) for p in item.path_ids):
             raise ValueError("Synthesis claims do not belong to the cited path.")
         if item.rule_ids and set(item.claim_ids) - {c for r in item.rule_ids for c in rules[r]["claim_ids"]}:
             raise ValueError("Synthesis claims do not belong to the cited rules.")
+    return ([f"{dropped} corroboration identifiers cited by the draft were not in its evidence bundle "
+             "and were removed."] if dropped else [])
 
 
 def evidence_bundle(response):
@@ -68,7 +94,7 @@ def evidence_bundle(response):
     return bundle, bool(omitted or shortened)
 
 
-def compute(response, snap, review, model, request):
+def compute(response, snap, review, model, request, exploratory=False, ranking="support"):
     query = response.grounded_query
     if review and query.context_id != review.context_id:
         response.status = "needs_clarification"
@@ -76,7 +102,7 @@ def compute(response, snap, review, model, request):
         return response
     if request.exclude_publication_ids and set(request.exclude_publication_ids) - snap.documents.keys():
         raise ProviderError("request", "unknown_publication", "Excluded publication does not exist in this snapshot.", 422)
-    baseline_graph = adapter.adapt(snap, review, query.source_id, query.target_id)
+    baseline_graph = adapter.adapt(snap, review, query.source_id, query.target_id, exploratory=exploratory)
     source_states = {baseline_graph.mappings[e.id].source_state for e in baseline_graph.links if e.source == query.source_id}
     target_states = {baseline_graph.mappings[e.id].target_state for e in baseline_graph.links if e.target == query.target_id}
     if len(source_states) > 1 or len(target_states) > 1:
@@ -85,12 +111,16 @@ def compute(response, snap, review, model, request):
         return response
     query.source_state_id = next(iter(source_states), None)
     query.target_state_id = next(iter(target_states), None)
-    baseline = signed_paths.analyze(baseline_graph, query, response.parsed_query.desired_readout_direction)
+    baseline = signed_paths.analyze(baseline_graph, query, response.parsed_query.desired_readout_direction,
+                                    ranking=ranking)
     effective = baseline_graph
     analysis = AnalysisResult(baseline=baseline)
     if request.exclude_publication_ids:
-        effective = adapter.adapt(snap, review, query.source_id, query.target_id, set(request.exclude_publication_ids))
-        analysis.after_exclusion = signed_paths.analyze(effective, query, response.parsed_query.desired_readout_direction)
+        effective = adapter.adapt(snap, review, query.source_id, query.target_id, set(request.exclude_publication_ids),
+                                  exploratory=exploratory)
+        analysis.after_exclusion = signed_paths.analyze(effective, query,
+                                                        response.parsed_query.desired_readout_direction,
+                                                        ranking=ranking)
         analysis.exclusion_effect = signed_paths.exclusion_effect(baseline, analysis.after_exclusion)
         if analysis.exclusion_effect == "no_change" and len(effective.evidence) < len(baseline_graph.evidence):
             analysis.exclusion_effect = "support_reduced"
@@ -199,7 +229,9 @@ class SimulationService:
             response.warnings.append(reason)
             return response
         try:
-            response = await asyncio.to_thread(compute, response, snap, review, model, request)
+            response = await asyncio.to_thread(compute, response, snap, review, model, request,
+                                               self.settings.exploratory_enabled and review is None,
+                                               self.settings.path_ranking)
         except adapter.ManifestError as exc:
             raise ProviderError("analysis", "invalid_review", str(exc), 409) from exc
         if response.analysis is None:
@@ -207,12 +239,20 @@ class SimulationService:
         if not response.links:
             response.warnings.append("Insufficient reviewed evidence; no synthesis or validation protocol was generated.")
             return response
+        # Enrichment only, and imported here so the AMASS stack stays out of an unused pipeline.
+        from nucleolus.corroboration.classify import MetadataOnlyClassifier, NebiusPassageClassifier
+        from nucleolus.corroboration.service import CorroborationService, claims_for_response
+        classifier = (NebiusPassageClassifier(self.settings) if self.settings.amass_classifier == "nebius"
+                      else MetadataOnlyClassifier())
+        response.amass_corroboration = await CorroborationService(self.settings, classifier).run(
+            claims_for_response(response, snap), request.corroboration,
+            synthetic=request.demo, snapshot_checksum=snap.checksum)
         try:
             bundle, truncated = evidence_bundle(response)
             response.truncation.evidence_bundle = truncated
             async with asyncio.timeout(max(0, min(self.settings.timeout, deadline - time.monotonic()))):
                 synthesis = await self.scientist.synthesize(bundle)
-            validate_citations(synthesis, bundle)
+            response.warnings.extend(validate_citations(synthesis, bundle))
             response.synthesis = synthesis
             response.synthesis_status = "generated"
         except (ProviderError, TimeoutError, ValueError) as exc:

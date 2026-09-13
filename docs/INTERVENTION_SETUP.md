@@ -1,6 +1,6 @@
 # Intervention backend and UI
 
-The new `POST /api/simulate-target` endpoint extends the existing FastAPI service. It parses with Nebius, computes qualitative implications in Python, and asks Claude for a cited research draft. `/ask` remains the separate, unimplemented legacy endpoint. Existing browsing endpoints are unchanged.
+The new `POST /api/simulate-target` endpoint extends the existing FastAPI service. It parses with Nebius, computes qualitative implications in Python, and asks Claude for a cited research draft. `/ask` is now an alias of `POST /api/research`, which answers questions from the snapshot without any key. Existing browsing endpoints are unchanged.
 
 ## Install and run on Windows
 
@@ -119,6 +119,74 @@ The runtime analysis uses the existing NetworkX infrastructure over INDRA-derive
 Install optional libraries with `uv pip install --python .venv/Scripts/python.exe -e '.[bel]'`. The core service does not need them. `pybel_available` must report actual import capability. The INDRA import helper accepts source statement JSON, so the `indra` Python package is needed only for additional object-based ingestion workflows.
 
 PyBEL 0.15.5 was installed and its real graph adapter tested in the current Python 3.14 environment. It requires `setuptools<81` for its legacy `pkg_resources` import; that compatibility constraint is included in the optional extra. Default PyStow caches/configuration are directed to `data/library-cache` and `data/library-config` rather than user home directories. Existing explicit PyStow environment settings are respected.
+
+## AMASS corroboration and provenance
+
+An optional enrichment channel beside the INDRA graph. It adds publication metadata and bounded
+discovery of further papers. It can never change an edge sign, the graph, a Boolean rule or a
+simulated state: a discovered paper enters the graph only through the existing review-manifest
+process. Disabled by default; every setting is in `.env.example`.
+
+```dotenv
+AMASS_ENABLED=false
+AMASS_MODE=cached          # disabled | cached | live
+AMASS_CLASSIFIER=metadata_only
+NOD_REVIEW_POLICY=require_approval
+```
+
+Modes. `disabled` does no work and says so. `cached` serves only records materialized earlier,
+bound to the snapshot checksum, claim, sign, context, classifier and review policy; any mismatch
+is a miss, never a silent reuse. `live` performs a bounded lookup and search, and only when
+enabled here — a request asking for `live` on a `cached` server is downgraded, never escalated.
+The synthetic demo uses fixtures and never calls AMASS.
+
+Bounds per request: `AMASS_MAX_CALLS_PER_REQUEST` (default 6), `AMASS_MAX_SEARCH_RESULTS` (20),
+`AMASS_MAX_RECORD_FETCHES` (20), `AMASS_MAX_CLAIMS` (5), a 15-second timeout, and a 2 MB response
+cap. Cost is 1 credit per call regardless of batch size, so lookup resolves many PMIDs in one call
+while each record's metadata needs its own GET. Only claims in the bounded synthesis bundle are
+assessed — never every edge in the snapshot.
+
+What the categories mean:
+
+| Category | Meaning |
+|---|---|
+| `cross_indexed_only` | AMASS resolved a paper INDRA already cites. Cross-indexing, **not** corroboration |
+| `additional_support_found` | A distinct publication family, not retracted, with a qualifying primary passage matching subject, object, direction and context |
+| `opposing_evidence_found` | The same bar, in the opposite direction |
+| `mixed_evidence` | Qualifying families on both sides |
+| `context_mismatch` | The relation appears only in an incompatible species, tissue or cell type |
+| `mention_only` | Entities co-occur, or only metadata came back; never support |
+| `no_additional_evidence_found` | A complete bounded search added nothing. **Not** proof of absence |
+| `truncated` | A limit could have changed the category; partial counts are kept |
+| `unavailable` | The stage could not run; the deterministic result stands |
+
+Four distinctions the payload keeps separate: **source pipelines** (a curated database and a reader
+citing one paper is pipeline diversity, not two studies), **publication families** (a preprint and
+its journal version count once, and only an explicit family link or a shared identifier merges
+records — never a similar title), **distinct primary studies** (qualifying families only), and
+**cross-indexing**. Reviews, editorials and protocols never count as primary support, and sole
+support from a retracted paper is shown but never counted.
+
+Passage classification is a separate bounded stage, never the narrative model's job.
+`metadata_only` (the default) reads no text, so it cannot produce support. `nebius` sends one
+abstract at a time under a strict schema; every quote must be an exact span of the supplied text,
+and an invented span, a wrong identifier, a negated or speculative sentence is rejected or
+downgraded to `unclear`. Machine classifications stay `unreviewed`, and under the default policy
+unreviewed passages cannot qualify as support — set `NOD_REVIEW_POLICY=allow_labelled_unreviewed`
+to count them, clearly labelled, instead.
+
+INDRA belief is retained in the API, exports and the expanded provenance, labelled as an assembly
+score that reflects automated statement assembly and source-specific extraction assumptions and
+does not estimate whether the claim is correct. It is never a headline number, and never the
+corroboration signal.
+
+Licensing: access was verified, **reuse and redistribution rights were not**. The adapter stays
+disabled by default, tests use synthetic fixtures with mocked transports, no real AMASS response is
+committed, the cache lives in the gitignored data directory, and full text is opt-in
+(`AMASS_INCLUDE_FULLTEXT=false`). A working key is not permission to republish.
+
+Run the mocked tests with `& .venv/Scripts/python.exe -m pytest tests/test_amass_client.py tests/test_corroboration.py -q`.
+They spend no credits and need no key. No live AMASS check has been run from this environment.
 
 ## Verification
 

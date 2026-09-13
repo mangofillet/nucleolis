@@ -24,7 +24,8 @@ class ClaudeScientist:
             response = await client.messages.create(
                 model=self.model, max_tokens=self.settings.synthesis_tokens,
                 system=CLAUDE_SYSTEM,
-                output_config={"format": {"type": "json_schema", "schema": schema}},
+                output_config={"effort": self.settings.synthesis_effort,
+                               "format": {"type": "json_schema", "schema": schema}},
                 messages=[{"role": "user", "content": json.dumps({"evidence_bundle": bundle, "output_schema": schema})}],
             )
             if response.stop_reason != "end_turn":

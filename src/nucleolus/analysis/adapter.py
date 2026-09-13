@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from nucleolus.analysis.sources import classify
 from nucleolus.graph.queries import Snapshot, _document_link
 from nucleolus.schemas.simulation import (
     ClaimMapping, EvidenceItem, ReviewManifest, SimulationLink, StatementRef,
@@ -51,14 +52,79 @@ def validate_review(manifest: ReviewManifest, snap: Snapshot) -> None:
             raise ManifestError("Review statement reference does not resolve.")
 
 
+CAUSAL_SIGNS = {"activates": 1, "increases_amount": 1, "inhibits": -1, "decreases_amount": -1}
+
+
+def explore(snap: Snapshot, source: str, target: str, exclusions: set[str]) -> AnalysisGraph:
+    """Unreviewed INDRA claims on source -> target routes of at most two hops. Hypotheses, never approved evidence."""
+    signed = [c for c in snap.claims.values()
+              if c.get("causal") and not c.get("negated") and CAUSAL_SIGNS.get(c.get("predicate")) == c.get("effect_sign")]
+    first = {c["object_id"] for c in signed if c["subject_id"] == source} - {source}
+    mediators = {c["subject_id"] for c in signed if c["object_id"] == target and c["subject_id"] in first} - {target}
+    chosen = [c for c in signed
+              if (c["subject_id"] == source and (c["object_id"] == target or c["object_id"] in mediators))
+              or (c["subject_id"] in mediators and c["object_id"] == target)]
+    links, evidence, dropped = [], [], 0
+    for claim in sorted(chosen, key=lambda c: c["id"]):
+        hashes = [str(claim["source_statement_hash"])] if claim.get("source_statement_hash") else []
+        rows = []
+        for eid in claim.get("evidence_ids", []):
+            raw = snap.evidence.get(eid)
+            document = snap.documents.get(raw.get("document_id")) if raw else None
+            if (not raw or not raw.get("quote") or raw.get("negated") or not document
+                    or document.get("retraction_status") == "retracted" or document["id"] in exclusions):
+                continue
+            rows.append(EvidenceItem(
+                id=raw["id"], claim_id=claim["id"], statement_hashes=hashes,
+                publication_id=document["id"], publication_url=_document_link(document),
+                quote=raw["quote"], context_id=raw.get("context_id") or "ctx_unknown",
+                review_status="unreviewed", source_api=raw.get("source_evidence_code"),
+            ))
+        if not rows:
+            dropped += 1
+            continue
+        belief = claim.get("belief") if hashes else None
+        refs = [StatementRef(statement_hash=hashes[0], belief=belief,
+                             statement_type=(claim.get("qualifiers_json") or {}).get("indra_statement_type") or claim["predicate"])] if hashes else []
+        docs = sorted({row.publication_id for row in rows})
+        primary = [snap.documents[d].get("is_primary") for d in docs]
+        links.append(SimulationLink(
+            id=claim["id"], source=claim["subject_id"], target=claim["object_id"], predicate=claim["predicate"],
+            sign=claim["effect_sign"], papers=len(docs), sentences=len(rows),
+            primary=sum(primary) if all(v is not None for v in primary) else None,
+            retracted=claim.get("n_retracted") or 0, soleSupportRetracted=bool(claim.get("sole_support_retracted")),
+            belief=belief, belief_score=belief,
+            belief_method="minimum_statement_belief" if belief is not None else "unavailable",
+            sources=dict(claim.get("source_counts") or {}),
+            source_class=classify(claim.get("source_counts"))["source_class"],
+            statement_refs=refs, evidence_ids=sorted(row.id for row in rows), publication_ids=docs,
+        ))
+        evidence.extend(rows)
+    # One neutral state per claim: exploratory mode cannot separate activity from abundance.
+    mappings = {link.id: ClaimMapping(claim_id=link.id, source_state="unspecified", target_state="unspecified",
+                                      assumption="Exploratory mode composes activity and abundance claims without distinguishing them.")
+                for link in links}
+    entity_ids = sorted({source, target} | {n for link in links for n in (link.source, link.target)})
+    warnings = ["EXPLORATORY MODE: unreviewed machine-extracted INDRA evidence; directions are hypotheses, not reviewed findings.",
+                "Activity and abundance claims are composed together; readout state is not distinguished."]
+    unscored = sum(link.belief is None for link in links)
+    if unscored:
+        warnings.append(f"{unscored} of {len(links)} claims lack an INDRA belief score.")
+    if dropped:
+        warnings.append(f"{dropped} candidate claims had no quotable, non-retracted evidence and were dropped.")
+    return AnalysisGraph(entity_ids, links, sorted(evidence, key=lambda e: e.id), mappings, warnings)
+
+
 def adapt(snap: Snapshot, manifest: ReviewManifest | None, source: str, target: str,
-          exclusions: set[str] | None = None) -> AnalysisGraph:
-    """Build an isolated graph from human-approved evidence; never promote raw data."""
+          exclusions: set[str] | None = None, exploratory: bool = False) -> AnalysisGraph:
+    """Build an isolated graph from human-approved evidence, or unreviewed evidence when exploratory."""
     exclusions = exclusions or set()
     if manifest is None:
+        if exploratory:
+            return explore(snap, source, target, exclusions)
         return AnalysisGraph(sorted({source, target}), [], [], {}, [
             "No checksum-bound review manifest is configured; unreviewed evidence is not eligible.",
-            "The current snapshot has no stored INDRA belief scores.",
+            "Set NOD_ENABLE_EXPLORATORY_MODE=true to analyse unreviewed INDRA evidence instead.",
         ])
     validate_review(manifest, snap)
     selected = set(manifest.selected_entity_ids)
@@ -110,6 +176,8 @@ def adapt(snap: Snapshot, manifest: ReviewManifest | None, source: str, target: 
             primary=sum(primary) if all(v is not None for v in primary) else None,
             belief=belief, belief_score=belief,
             belief_method="minimum_statement_belief" if complete else "unavailable",
+            sources=dict(claim.get("source_counts") or {}),
+            source_class=classify(claim.get("source_counts"))["source_class"],
             statement_refs=refs, evidence_ids=sorted(row.id for row in rows), publication_ids=docs,
         ))
         evidence.extend(rows)

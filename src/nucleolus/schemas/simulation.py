@@ -5,6 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, BeforeValidator, model_validator
 
+from nucleolus.schemas.corroboration import AmassCorroborationSummary, CorroborationRequest
+
 
 def _integer(value):
     if type(value) is not int:
@@ -35,6 +37,8 @@ class SimulateTargetRequest(Model):
     boolean_model_id: Id | None = None
     exclude_publication_ids: Annotated[list[Id], Field(max_length=1)] = Field(default_factory=list)
     demo: bool = False
+    # Optional enrichment. The server clamps every limit and can refuse live mode.
+    corroboration: CorroborationRequest | None = None
 
     @model_validator(mode="after")
     def method_binding(self):
@@ -184,6 +188,10 @@ class EvidenceAssessment(Model):
     weakest_belief: Score | None
     distinct_publication_count: int = Field(ge=0)
     reviewed_evidence_count: int = Field(ge=0)
+    # Provenance a reader can act on, unlike belief: who wrote the claim down.
+    curated_database_claims: int = Field(default=0, ge=0)
+    machine_read_claims: int = Field(default=0, ge=0)
+    multi_source_claims: int = Field(default=0, ge=0)
     limitations: Texts
 
 
@@ -194,6 +202,9 @@ class NarrativeClaim(Model):
     evidence_ids: Ids
     path_ids: Ids
     rule_ids: Ids
+    # Corroboration records may be cited, and are validated against the bundle like any other ID.
+    amass_document_ids: Ids = Field(default_factory=list)
+    amass_passage_ids: Ids = Field(default_factory=list)
 
     @model_validator(mode="after")
     def references(self):
@@ -234,7 +245,7 @@ class EvidenceItem(Model):
     publication_url: str | None
     quote: str | None
     context_id: Id
-    review_status: Literal["approved"] = "approved"
+    review_status: Literal["approved", "unreviewed"] = "approved"
     source_api: str | None
 
 
@@ -281,6 +292,9 @@ class SimulationLink(Model):
     belief: Score | None = None
     belief_score: Score | None = None
     belief_method: Literal["minimum_statement_belief", "unavailable"] = "unavailable"
+    # Belief mostly encodes which reader rule fired, so carry the provenance a reader can act on.
+    sources: dict[str, int] = Field(default_factory=dict)
+    source_class: Literal["curated_database", "machine_read", "mixed", "unknown"] = "unknown"
     statement_refs: list[StatementRef]
     evidence_ids: Ids
     publication_ids: Ids
@@ -411,6 +425,8 @@ class SimulateTargetResponse(Model):
     warnings: list[str] = Field(default_factory=list)
     errors: list[PipelineError] = Field(default_factory=list)
     provenance: PipelineProvenance = Field(default_factory=PipelineProvenance)
+    # Enrichment only. Defaults to "not requested" and never alters the analysis above.
+    amass_corroboration: AmassCorroborationSummary = Field(default_factory=AmassCorroborationSummary)
 
     @model_validator(mode="after")
     def graph_integrity(self):

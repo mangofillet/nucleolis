@@ -20,7 +20,8 @@ def catalog(snap: Snapshot) -> list[dict]:
 
 
 def ground(parsed: ParsedQuery, snap: Snapshot, context_id: str | None) -> tuple[GroundedQuery | None, str | None]:
-    if parsed.query_intent != "intervention" or parsed.intervention not in {"knockout", "decrease", "increase"}:
+    # The intervention slot is operative; parsers sometimes label a stated knockout "mechanism".
+    if parsed.query_intent == "unsupported" or parsed.intervention not in {"knockout", "decrease", "increase"}:
         return None, "Specify which entity to increase, decrease, or knock out and which readout to inspect."
     resolved = []
     for name, mention in [("source", parsed.source_entity), ("readout", parsed.target_entity)]:

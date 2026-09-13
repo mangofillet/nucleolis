@@ -17,6 +17,8 @@ from nucleolus import config
 from nucleolus.graph import pathways as pathways_mod
 from nucleolus.graph import queries
 from nucleolus.api.simulation import router as simulation_router
+from nucleolus.api.research import router as research_router, research_question
+from nucleolus.schemas.research import ResearchResponse
 
 UI_DIST = config.REPO_ROOT / "ui" / "dist"
 
@@ -34,6 +36,8 @@ app.add_middleware(
 )
 
 app.include_router(simulation_router)
+app.include_router(research_router)
+app.post("/ask", response_model=ResearchResponse, tags=["research"])(research_question)
 
 _snapshot: queries.Snapshot | None = None
 _load_error: str | None = None
@@ -90,8 +94,8 @@ def health():
             "context_filter": False,
             "context_filter_reason": "cell type and tissue are too sparse to filter on; "
                                      "species is displayed but not yet filterable",
-            "ask": False,
-            "ask_reason": "no LLM key configured; evidence browsing is unaffected",
+            "ask": True,
+            "ask_reason": "Common research questions run locally; broader wording uses an optional Nebius parser",
         },
     }
 
@@ -238,24 +242,6 @@ def export_graph(
         "nodes": view["nodes"],
         "claims": claims,
     }
-
-
-@app.post("/ask")
-def ask():
-    """Grounded answering is Phase D and requires an LLM key.
-
-    Absence of a key degrades to evidence-only browsing. It never degrades to a
-    generated answer without citations.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail={
-            "implemented": False,
-            "reason": "grounded answering is Phase D; no LLM key is configured",
-            "fallback": "use /graph and /edges/{claim_id}/evidence to inspect "
-                        "claims and their supporting quotes directly",
-        },
-    )
 
 
 # ---------------------------------------------------------------------------

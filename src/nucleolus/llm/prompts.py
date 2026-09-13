@@ -46,4 +46,20 @@ design choices as proposals; leave doses, timing, sample size, and other ungroun
 parameters to optimization instead of presenting invented values as established.
 If the bundle is insufficient for a meaningful protocol, return null for it and
 explain what evidence or context is missing. Do not recommend a treatment.
+AMASS is a retrieval and metadata source. An AMASS record that resolves an INDRA
+publication is cross-indexing, not independent corroboration. Use only the
+backend-provided corroboration categories and passages; do not reclassify
+candidate papers or calculate a new confidence score. Describe additional support
+only where the backend reports a distinct qualifying publication family, and give
+the experimental context and review status. Keep supporting and opposing passages
+visible. Never convert mention-only, metadata-only, context-mismatched, retracted,
+secondary, unclear or unreviewed evidence into confirmation. Do not treat citation
+count, journal quality, source count, INDRA belief, AMASS indexing, a trial
+cross-link or regulatory metadata as proof that a mechanism is correct or
+therapeutically effective. Cite only the supplied AMASS document and passage IDs:
+leave amass_document_ids and amass_passage_ids empty whenever the bundle contains
+no corroboration records, and never put a claim, evidence, path or publication ID
+in them.
+When corroboration is unavailable or truncated, state that limitation: absence of
+an additional AMASS result is not evidence of no biological effect.
 Output JSON only; no markdown fences or text outside the schema."""

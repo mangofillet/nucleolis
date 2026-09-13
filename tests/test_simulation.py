@@ -165,6 +165,16 @@ def test_grounding_must_match_catalog(data):
     assert grounding.ground(parsed, snap, None)[0] is None
 
 
+def test_grounding_uses_stated_intervention_not_intent_label(data):
+    snap, _, _ = data
+    parsed = asyncio.run(demo.DemoParser().parse(demo.DEMO_QUERY, []))
+    parsed.query_intent = "mechanism"
+    grounded, reason = grounding.ground(parsed, snap, None)
+    assert reason is None and grounded.source_id == "DEMO:A" and grounded.target_id == "DEMO:C"
+    parsed.query_intent = "unsupported"
+    assert grounding.ground(parsed, snap, None)[0] is None
+
+
 def test_service_success_and_claude_failure_preserves_graph(data):
     snap, review, model = data
     request = SimulateTargetRequest(query=demo.DEMO_QUERY, demo=True, context_id="demo_context")
@@ -268,3 +278,72 @@ def test_completed_endpoint_response_exports_resolvable_references(data):
     assert any(not link.eligible for link in result.links)
     assert result.evidence_assessment.distinct_publication_count == 1
     SimulateTargetResponse.model_validate_json(result.model_dump_json())
+
+
+def test_exploratory_mode_uses_unreviewed_evidence_and_labels_it(data):
+    snap, _, _ = data
+    graph = adapter.adapt(snap, None, "DEMO:A", "DEMO:C", exploratory=True)
+    assert {link.id for link in graph.links} == {"demo_ab", "demo_bc"}
+    assert all(e.review_status == "unreviewed" for e in graph.evidence)
+    assert graph.warnings[0].startswith("EXPLORATORY MODE")
+    assert "2 of 2 claims lack an INDRA belief score." in graph.warnings
+    assert confidence.assess(graph).reviewed_evidence_count == 0
+
+
+def test_exploratory_mode_maps_statement_belief_to_links(data):
+    snap, _, _ = data
+    snap.claims["demo_ab"].update(belief=0.7, source_statement_hash="123")
+    link = next(l for l in adapter.adapt(snap, None, "DEMO:A", "DEMO:C", exploratory=True).links if l.id == "demo_ab")
+    assert link.belief_score == 0.7 and link.belief_method == "minimum_statement_belief"
+    assert link.statement_refs[0].statement_hash == "123" and link.statement_refs[0].belief == 0.7
+
+
+def test_exploratory_mode_drops_retracted_support(data):
+    snap, _, _ = data
+    snap.documents["DEMO-PAPER:demo_bc"]["retraction_status"] = "retracted"
+    graph = adapter.adapt(snap, None, "DEMO:A", "DEMO:C", exploratory=True)
+    assert [link.id for link in graph.links] == ["demo_ab"]
+    assert any("dropped" in w for w in graph.warnings)
+
+
+def test_service_runs_exploratory_analysis_without_manifest(data):
+    snap, _, _ = data
+    service = SimulationService(Settings(exploratory_enabled=True), demo.DemoParser(), demo.DemoScientist())
+    result = asyncio.run(service.run(SimulateTargetRequest(query=demo.DEMO_QUERY), snap))
+    assert result.analysis.baseline.category != "insufficient_evidence" and len(result.links) == 2
+    states = {n.id: n.state for n in result.nodes}
+    assert states["DEMO:A"] == "decreased" and states["DEMO:B"] == "decreased" and states["DEMO:C"] == "increased"
+    SimulateTargetResponse.model_validate_json(result.model_dump_json())
+
+
+def test_display_order_follows_support_not_belief():
+    from nucleolus.schemas.simulation import SimulationLink
+
+    def link(cid, source, target, papers, belief):
+        return SimulationLink(id=cid, source=source, target=target, predicate="activates", sign=1,
+                              papers=papers, belief=belief, belief_score=belief,
+                              belief_method="minimum_statement_belief", statement_refs=[],
+                              evidence_ids=[], publication_ids=[])
+
+    links = [link("direct", "A", "C", 2, 0.9), link("ab", "A", "B", 10, 0.4), link("bc", "B", "C", 10, 0.4)]
+    mappings = {l.id: ClaimMapping(claim_id=l.id, source_state="unspecified", target_state="unspecified",
+                                   assumption="fixture") for l in links}
+    graph = adapter.AnalysisGraph(["A", "B", "C"], links, [], mappings, [])
+    query = GroundedQuery(source_id="A", target_id="C", intervention_direction=1,
+                          source_state_id="unspecified", target_state_id="unspecified")
+    result = signed_paths.analyze(graph, query, None)
+    # The 10-paper route outranks the 2-paper route despite the latter's higher belief.
+    assert [p.node_ids for p in result.paths] == [["A", "B", "C"], ["A", "C"]]
+    assert result.paths[0].belief_score == 0.4
+
+
+def test_links_and_assessment_carry_source_class(data):
+    snap, _, _ = data
+    snap.claims["demo_ab"]["source_counts"] = {"biogrid": 1}
+    snap.claims["demo_bc"]["source_counts"] = {"reach": 3}
+    graph = adapter.adapt(snap, None, "DEMO:A", "DEMO:C", exploratory=True)
+    classes = {link.id: link.source_class for link in graph.links}
+    assert classes == {"demo_ab": "curated_database", "demo_bc": "machine_read"}
+    assessment = confidence.assess(graph)
+    assert (assessment.curated_database_claims, assessment.machine_read_claims, assessment.multi_source_claims) == (1, 1, 0)
+    assert any("does not separate extraction faults" in text for text in assessment.limitations)
