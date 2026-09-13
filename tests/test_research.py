@@ -8,13 +8,13 @@ from fastapi.testclient import TestClient
 from openai import AsyncOpenAI
 from pydantic import ValidationError
 
-from nucleolus.api.main import app
-from nucleolus.api.research import snapshot_dependency
-from nucleolus.api.simulation import settings_dependency
-from nucleolus.graph.queries import Snapshot
-from nucleolus.llm.settings import Settings
-from nucleolus.schemas.research import ResearchRequest, ResearchResponse
-from nucleolus.services import research
+from nucleolis.api.main import app
+from nucleolis.api.research import snapshot_dependency
+from nucleolis.api.simulation import settings_dependency
+from nucleolis.graph.queries import Snapshot
+from nucleolis.llm.settings import Settings
+from nucleolis.schemas.research import ResearchRequest, ResearchResponse
+from nucleolis.services import research
 from test_contract import _snapshot_payload
 
 

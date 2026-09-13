@@ -10,7 +10,7 @@ from __future__ import annotations
 import networkx as nx
 import pytest
 
-from nucleolus.api import axes as axes_mod
+from nucleolis.api import axes as axes_mod
 
 
 class StubSnapshot:

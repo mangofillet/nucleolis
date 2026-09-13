@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from nucleolus.schemas.simulation import ClaudeSynthesis, NarrativeClaim
-from nucleolus.services.simulate_target import validate_citations
+from nucleolis.schemas.simulation import ClaudeSynthesis, NarrativeClaim
+from nucleolis.services.simulate_target import validate_citations
 
 CLAIM = "clm_1"
 

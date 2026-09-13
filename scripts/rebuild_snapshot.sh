@@ -22,8 +22,8 @@ CAP_ARG=()
 [ -n "${EVIDENCE_CAP:-}" ] && CAP_ARG=(--max-evidence-per-claim "$EVIDENCE_CAP")
 
 export PYTHONPATH=src
-"$PY" -m nucleolus.pipeline.retrieve --max-nodes "${MAX_NODES:-500}" --evidence-for all
-"$PY" -m nucleolus.pipeline.normalize
-"$PY" -m nucleolus.pipeline.enrich
-"$PY" -m nucleolus.pipeline.build --label "$LABEL" "${CAP_ARG[@]}"
+"$PY" -m nucleolis.pipeline.retrieve --max-nodes "${MAX_NODES:-500}" --evidence-for all
+"$PY" -m nucleolis.pipeline.normalize
+"$PY" -m nucleolis.pipeline.enrich
+"$PY" -m nucleolis.pipeline.build --label "$LABEL" "${CAP_ARG[@]}"
 echo "snapshot ready: $LABEL  (restart the API to serve it)"

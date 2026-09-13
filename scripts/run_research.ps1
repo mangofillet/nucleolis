@@ -14,6 +14,6 @@ if (-not $SkipBuild) {
 }
 Push-Location $projectRoot
 try {
-    Write-Host "Nucleolus research workspace: http://127.0.0.1:$Port/"
-    & $projectPython -m uvicorn nucleolus.api.main:app --app-dir src --host 127.0.0.1 --port $Port
+    Write-Host "Nucleolis research workspace: http://127.0.0.1:$Port/"
+    & $projectPython -m uvicorn nucleolis.api.main:app --app-dir src --host 127.0.0.1 --port $Port
 } finally { Pop-Location }

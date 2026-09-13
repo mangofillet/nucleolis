@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from nucleolus.pipeline.sources.pubmed import classify_types, parse_pubdate
+from nucleolis.pipeline.sources.pubmed import classify_types, parse_pubdate
 
 
 # ---------------------------------------------------------------------------

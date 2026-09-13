@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: Object.fromEntries(['/api', '/ask', '/health', '/nodes', '/node', '/edges', '/graph', '/path', '/exports']
-      .map(path => [path, { target: 'http://127.0.0.1:8077', changeOrigin: true }])),
+      .map(path => [path, { target: 'http://127.0.0.1:8079', changeOrigin: true }])),
   },
 })

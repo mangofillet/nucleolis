@@ -50,7 +50,7 @@ export default function InterventionView({ onExit }: { onExit: () => void }) {
 
   return <main className="intervention">
     <header className="iv-header">
-      <div><small>nucleolus / mechanism research</small><h1>Explore an intervention</h1></div>
+      <div><small>nucleolis / mechanism research</small><h1>Explore an intervention</h1></div>
       <button onClick={onExit}>Evidence browser</button>
     </header>
     <p>Trace an assumed perturbation through reviewed evidence, inspect competing directions, and draft a discriminating experiment.</p>

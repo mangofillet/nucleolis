@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from nucleolus.analysis.sources import classify
+from nucleolis.analysis.sources import classify
 
 
 @pytest.mark.parametrize("counts,expected", [

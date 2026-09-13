@@ -9,10 +9,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from nucleolus.graph.queries import load_snapshot
-from nucleolus.llm.settings import Settings
-from nucleolus.schemas.research import ResearchRequest
-from nucleolus.services.research import analyze, interpret
+from nucleolis.graph.queries import load_snapshot
+from nucleolis.llm.settings import Settings
+from nucleolis.schemas.research import ResearchRequest
+from nucleolis.services.research import analyze, interpret
 
 
 async def main():

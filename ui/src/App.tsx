@@ -339,7 +339,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <strong>nucleolus</strong>
+          <strong>nucleolis</strong>
           <span className="muted"> ALS/FTD mechanism evidence browser</span>
         </div>
         <form

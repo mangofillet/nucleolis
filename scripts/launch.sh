@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# nucleolus - single-command launch.
+# nucleolis - single-command launch.
 # Serves the API and the built UI from one process on one port.
 # Requires a snapshot in data/snapshots/ (see scripts/rebuild_snapshot.sh).
 # Makes no network request.
@@ -20,5 +20,5 @@ if [ ! -d ui/dist ]; then
   (cd ui && npm install --silent && npm run build)
 fi
 
-echo "nucleolus -> http://127.0.0.1:${PORT}   (snapshot: $(cat data/snapshots/CURRENT))"
-PYTHONPATH=src exec "$PY" -m uvicorn nucleolus.api.main:app --host 127.0.0.1 --port "$PORT"
+echo "nucleolis -> http://127.0.0.1:${PORT}   (snapshot: $(cat data/snapshots/CURRENT))"
+PYTHONPATH=src exec "$PY" -m uvicorn nucleolis.api.main:app --host 127.0.0.1 --port "$PORT"

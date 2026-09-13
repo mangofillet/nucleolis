@@ -6,7 +6,7 @@ it must never present a sample as if it were the whole trail.
 """
 from __future__ import annotations
 
-from nucleolus.pipeline.build import apply_evidence_cap
+from nucleolis.pipeline.build import apply_evidence_cap
 
 
 def make_tables(evidence_per_claim, quotes=True, docs=True):

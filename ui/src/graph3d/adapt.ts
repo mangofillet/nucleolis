@@ -1,5 +1,5 @@
 /**
- * Adapts a nucleolus `/graph` response into the source-agnostic Node-Link
+ * Adapts a nucleolis `/graph` response into the source-agnostic Node-Link
  * contract the 3D renderer consumes.
  *
  * Kept separate from the renderer on purpose: amass-graph's `graph_data.json`
@@ -8,7 +8,7 @@
 import type { GraphResponse } from "../api";
 import type { GLink, GNode, GraphData } from "./types";
 
-export function fromNucleolus(graph: GraphResponse): GraphData {
+export function fromNucleolis(graph: GraphResponse): GraphData {
   // Opposing claims between the same ordered pair, counted in papers.
   // Never netted - the pair is carried through so the renderer can show both.
   const byPair = new Map<string, { pos: number; neg: number }>();

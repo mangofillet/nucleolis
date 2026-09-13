@@ -7,7 +7,7 @@ import {
   type SearchResult,
 } from "../api";
 import Graph3D from "./Graph3D";
-import { fromNucleolus } from "./adapt";
+import { fromNucleolis } from "./adapt";
 import { agreement } from "./types";
 import "./cinematic.css";
 
@@ -71,7 +71,7 @@ export default function CinematicView({ health, onExit }: Props) {
       .finally(() => setLoading(false));
   }, [centerId, maxNodes, minSupport]);
 
-  const data = useMemo(() => (graph ? fromNucleolus(graph) : { nodes: [], links: [] }), [graph]);
+  const data = useMemo(() => (graph ? fromNucleolis(graph) : { nodes: [], links: [] }), [graph]);
 
   const selectLink = useCallback((claimId: string) => {
     setSelectedLinkId(claimId);
@@ -138,7 +138,7 @@ export default function CinematicView({ health, onExit }: Props) {
         <div className="cine-brand">
           <span className="cine-mark" />
           <div>
-            <strong>nucleolus</strong>
+            <strong>nucleolis</strong>
             <span className="cine-sub">ALS/FTD mechanism space</span>
           </div>
         </div>

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from nucleolus.graph import pathways as pw
-from nucleolus.graph.queries import Snapshot
+from nucleolis.graph import pathways as pw
+from nucleolis.graph.queries import Snapshot
 
 
 def _claim(cid, subj, pred, obj, sign, papers, causal=True):

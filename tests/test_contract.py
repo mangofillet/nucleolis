@@ -8,9 +8,9 @@ import copy
 
 import pytest
 
-from nucleolus import config
-from nucleolus.graph import queries
-from nucleolus.pipeline import build, normalize
+from nucleolis import config
+from nucleolis.graph import queries
+from nucleolis.pipeline import build, normalize
 
 
 # ---------------------------------------------------------------------------

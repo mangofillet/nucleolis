@@ -6,7 +6,7 @@ import asyncio
 import httpx
 import pytest
 
-from nucleolus.pipeline.sources.amass import AmassClient, AmassError, parse_record, passage_text
+from nucleolis.pipeline.sources.amass import AmassClient, AmassError, parse_record, passage_text
 
 KEY = "test-only-not-a-real-key"
 RECORD = {"amassId": "AMBC_1", "pmid": "38360089", "doi": "10.1/A", "title": "Fixture",

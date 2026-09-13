@@ -6,16 +6,16 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from nucleolus.analysis import adapter, boolean, confidence, demo, grounding, signed_paths
-from nucleolus.api.main import app
-from nucleolus.api.simulation import service_dependency, settings_dependency
-from nucleolus.llm.common import ProviderError
-from nucleolus.llm.settings import Settings
-from nucleolus.schemas.simulation import (
+from nucleolis.analysis import adapter, boolean, confidence, demo, grounding, signed_paths
+from nucleolis.api.main import app
+from nucleolis.api.simulation import service_dependency, settings_dependency
+from nucleolis.llm.common import ProviderError
+from nucleolis.llm.settings import Settings
+from nucleolis.schemas.simulation import (
     BooleanManifest, ClaimMapping, EntityMention, EvidenceReview, GroundedQuery, Limits,
     ParsedQuery, Rule, SimulateTargetRequest, SimulateTargetResponse, StatementRef,
 )
-from nucleolus.services.simulate_target import SimulationService, validate_citations
+from nucleolis.services.simulate_target import SimulationService, validate_citations
 
 
 @pytest.fixture
@@ -225,7 +225,7 @@ def test_indra_adapter_preserves_hash_and_unknown_belief():
 
 
 def test_real_pybel_export_preserves_states_citations_and_parallel_claims(data):
-    from nucleolus.analysis import bel_adapter
+    from nucleolis.analysis import bel_adapter
     if not bel_adapter.available():
         pytest.skip("optional PyBEL import is unavailable")
     snap, review, _ = data
@@ -245,7 +245,7 @@ def test_real_pybel_export_preserves_states_citations_and_parallel_claims(data):
 
 
 def test_provider_settings_read_quotes_and_process_override(tmp_path, monkeypatch):
-    from nucleolus import config
+    from nucleolis import config
     path = tmp_path / ".env"
     path.write_text('export NEBIUS_MODEL="fixture-model"\nNEBIUS_API_KEY=\'test-only\'\n', encoding="utf-8")
     assert config._parse_env_file(path) == {"NEBIUS_MODEL": "fixture-model", "NEBIUS_API_KEY": "test-only"}
@@ -317,7 +317,7 @@ def test_service_runs_exploratory_analysis_without_manifest(data):
 
 
 def test_display_order_follows_support_not_belief():
-    from nucleolus.schemas.simulation import SimulationLink
+    from nucleolis.schemas.simulation import SimulationLink
 
     def link(cid, source, target, papers, belief):
         return SimulationLink(id=cid, source=source, target=target, predicate="activates", sign=1,

@@ -1,6 +1,6 @@
 # Intervention backend and UI
 
-The new `POST /api/simulate-target` endpoint extends the existing FastAPI service. It parses with Nebius, computes qualitative implications in Python, and asks Claude for a cited research draft. `/ask` is now an alias of `POST /api/research`, which answers questions from the snapshot without any key. Existing browsing endpoints are unchanged.
+The new `POST /api/simulate-target` endpoint extends the existing FastAPI service. It parses with Nebius, computes qualitative implications in Python, and asks a Nebius model (Claude by opt-in) for a cited research draft. `/ask` is now an alias of `POST /api/research`, which answers questions from the snapshot without any key. Existing browsing endpoints are unchanged.
 
 ## Install and run on Windows
 
@@ -9,7 +9,7 @@ From `nucleolus`:
 ```powershell
 uv pip install --python .venv/Scripts/python.exe -e '.[dev]'
 $env:PYTHONPATH = 'src'
-& .venv/Scripts/python.exe -m uvicorn nucleolus.api.main:app --host 127.0.0.1 --port 8077
+& .venv/Scripts/python.exe -m uvicorn nucleolis.api.main:app --host 127.0.0.1 --port 8077
 ```
 
 From `nucleolus/ui`, run `npm.cmd run build` before starting the API for a single-service production preview. Open `http://127.0.0.1:8077/#intervention`, or choose **Intervention** from the evidence browser. The default pathways view has an exit to that browser. For Vite development use `npm.cmd run dev`; existing localhost:5173 CORS settings are retained.
@@ -24,24 +24,28 @@ Add these names to the gitignored `nucleolus/.env`; use real values only in that
 NEBIUS_API_KEY=
 NEBIUS_MODEL=
 NEBIUS_BASE_URL=https://api.studio.nebius.ai/v1/
+# Optional: a separate Nebius model for cited drafts; empty means NEBIUS_MODEL.
+NEBIUS_SYNTHESIS_MODEL=
+# nebius (default) or anthropic. The Anthropic values are needed only when opting in to Claude.
+LLM_SYNTHESIS_PROVIDER=nebius
 ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-sonnet-4-6
 ```
 
-`NEBIUS_MODEL` must be the exact model ID enabled for the account and support strict JSON schema. No model ID is guessed. The default Nebius URL preserves the requested architecture; current provider examples also use `https://api.tokenfactory.nebius.com/v1/`. Set an explicit override if required by the account. Claude 3.5 Sonnet is retired, so the model is configurable and defaults to Sonnet 4.6.
+`NEBIUS_MODEL` must be the exact model ID enabled for the account and support strict JSON schema. No model ID is guessed. The default Nebius URL preserves the requested architecture; current provider examples also use `https://api.tokenfactory.nebius.com/v1/`. Set an explicit override if required by the account. Drafts use the same Nebius model unless `NEBIUS_SYNTHESIS_MODEL` names another strict-schema model. When opting in to Claude, `ANTHROPIC_MODEL` is configurable and defaults to Sonnet 4.6.
 
-The default per-stage deadline is 30 seconds and the total deadline 65 seconds. The parser permits one schema-repair attempt and caps each output at 1,000 tokens. Claude has one attempt and 3,000 output tokens. SDK automatic retries are disabled. See `.env.example` for overrides. Credentials and raw upstream error bodies are never included in API responses.
+The default per-stage deadline is 30 seconds and the total deadline 65 seconds. The parser permits one schema-repair attempt and caps each output at 1,000 tokens. The Nebius drafting model gets one schema-repair attempt and 3,000 output tokens by default; Claude, when opted in, has one attempt. SDK automatic retries are disabled. See `.env.example` for overrides. Credentials and raw upstream error bodies are never included in API responses.
 
 `GET /api/simulation-capabilities` reports configured models, review context, optional BEL availability, and demo availability without exposing keys. Configured means settings are present, not that a live request has succeeded.
 
-An explicitly paid, bounded provider smoke check uses **fictional evidence**, but real Nebius and Claude calls:
+An explicitly paid, bounded provider smoke check uses **fictional evidence**, but real provider calls (Nebius for both stages by default):
 
 ```powershell
 $env:PYTHONPATH = 'src'
-& .venv/Scripts/python.exe -m nucleolus.llm.smoke --live
+& .venv/Scripts/python.exe -m nucleolis.llm.smoke --live
 ```
 
-This makes at most two parser calls and one synthesis call. Offline tests never contact the providers.
+This makes at most two parser calls and two synthesis calls. Offline tests never contact the providers.
 
 ## Software demonstration without keys
 
@@ -49,7 +53,7 @@ Set `NOD_ENABLE_SYNTHETIC_DEMO=true` and restart the service. In the Interventio
 
 > What happens to Reporter C if I knock out Switch A?
 
-The explicitly synthetic chain is `A activates B; B inhibits C`. Knockout of A implies decreased B and increased C. The fixture's Boolean rules are `A'=A`, `B'=A`, `C'=NOT B`, with initial state `(1,1,0)`. Persistent knockout leads to `(0,0,1)`. These are fictional software examples, not claims about ALS/FTD, INDRA beliefs, or experiments. Fixture text is not a Claude response.
+The explicitly synthetic chain is `A activates B; B inhibits C`. Knockout of A implies decreased B and increased C. The fixture's Boolean rules are `A'=A`, `B'=A`, `C'=NOT B`, with initial state `(1,1,0)`. Persistent knockout leads to `(0,0,1)`. These are fictional software examples, not claims about ALS/FTD, INDRA beliefs, or experiments. Fixture text is not a model response.
 
 Example request:
 
@@ -94,7 +98,7 @@ Publication exclusion removes evidence and recomputes eligibility. The response 
 
 Boolean execution is synchronous, with at most 20 logical updates, persistent clamps, explicit threshold ties (retain prior state), fixed-point and cycle detection. Numeric baseline/perturbed node states and flips are returned only if both runs reach fixed points. Rule steps have no physical time unit.
 
-The envelope includes `snapshot`, review/rule versions, parsed and grounded query, analysis, backend evidence assessment, Claude synthesis, `nodes`, `links`, citations, limits, truncation, warnings, and provider provenance. Nodes retain the renderer's `id/name/kind` fields and add qualitative state. Links retain claim IDs, predicates, publication counts, signs and evidence, with equal nullable `belief`/`belief_score` aliases. The frontend copies graph objects before force-graph mutates them.
+The envelope includes `snapshot`, review/rule versions, parsed and grounded query, analysis, backend evidence assessment, model synthesis, `nodes`, `links`, citations, limits, truncation, warnings, and provider provenance. Nodes retain the renderer's `id/name/kind` fields and add qualitative state. Links retain claim IDs, predicates, publication counts, signs and evidence, with equal nullable `belief`/`belief_score` aliases. The frontend copies graph objects before force-graph mutates them.
 
 Belief coverage and the weakest observed statement score are descriptive; they are not a treatment probability. The assessment covers eligible evidence in the selected graph. The synthesis bundle contains displayed proof chains, at most 60 evidence records, and passages shortened to 1,200 characters, with omissions disclosed. Pydantic checks provider shape; reference validation checks citation membership and relationships. Neither proves that generated prose is scientifically entailed, so it remains a reviewable draft.
 
@@ -108,7 +112,7 @@ Response handling:
 | Missing parser key/model | HTTP 503 |
 | Parser refusal/malformed output | HTTP 502 |
 | Parser deadline | HTTP 504 |
-| Claude unavailable/invalid/timeout | HTTP 200, `partial`, deterministic graph retained |
+| Draft model unavailable/invalid/timeout | HTTP 200, `partial`, deterministic graph retained |
 | Stale snapshot/review binding | HTTP 409 |
 | Malformed request | HTTP 422 |
 

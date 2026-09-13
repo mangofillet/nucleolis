@@ -122,7 +122,7 @@ export default function PathwayView({ health, onExit }: Props) {
     <div className="pw">
       <header className="pw-top">
         <div className="pw-brand">
-          <strong>nucleolus</strong>
+          <strong>nucleolis</strong>
           <span>INDRA CoGEx · bounded 2-hop perturbation search</span>
         </div>
         <button className="pw-exit" onClick={onExit}>

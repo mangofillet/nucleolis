@@ -1,7 +1,7 @@
 /**
  * Node-Link JSON contract for the 3D view.
  *
- * Deliberately source-agnostic: nucleolus `/graph` is adapted into this shape,
+ * Deliberately source-agnostic: nucleolis `/graph` is adapted into this shape,
  * and amass-graph's `graph_data.json` maps onto the same fields. Nothing in the
  * renderer knows which produced it.
  *

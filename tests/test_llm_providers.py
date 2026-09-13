@@ -7,13 +7,13 @@ import pytest
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
-from nucleolus.analysis import demo, grounding
-from nucleolus.llm.claude import ClaudeScientist
-from nucleolus.llm.common import ProviderError
-from nucleolus.llm.nebius import NebiusParser
-from nucleolus.llm.settings import Settings
-from nucleolus.schemas.simulation import ClaudeSynthesis, NarrativeClaim, SimulateTargetRequest
-from nucleolus.services.simulate_target import SimulationService, evidence_bundle, validate_citations
+from nucleolis.analysis import demo, grounding
+from nucleolis.llm.claude import ClaudeScientist
+from nucleolis.llm.common import ProviderError
+from nucleolis.llm.nebius import NebiusParser
+from nucleolis.llm.settings import Settings
+from nucleolis.schemas.simulation import ClaudeSynthesis, NarrativeClaim, SimulateTargetRequest
+from nucleolis.services.simulate_target import SimulationService, evidence_bundle, validate_citations
 
 
 def parsed_json():

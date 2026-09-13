@@ -136,15 +136,16 @@ and the active `snapshot_id`. The browser rejects a returned snapshot/checksum m
 The simulation pipeline may select additional relevant evidence outside the displayed
 research routes; those cited claims remain inspectable in the evidence panel.
 
-Required provider settings are `NEBIUS_API_KEY`, `NEBIUS_MODEL`, `ANTHROPIC_API_KEY`
-and `ANTHROPIC_MODEL`. Configuration flags indicate available settings, not successful
+Required provider settings are `NEBIUS_API_KEY` and `NEBIUS_MODEL`; drafts use
+`NEBIUS_SYNTHESIS_MODEL` when it is set. Claude is opt-in through `LLM_SYNTHESIS_PROVIDER=anthropic`
+with `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL`. Configuration flags indicate available settings, not successful
 authentication, model access or a validated biological model. See
 [INTERVENTION_SETUP.md](INTERVENTION_SETUP.md) for provider and evidence-policy setup.
 `NOD_ENABLE_EXPLORATORY_MODE=true` permits the separate pipeline to label unreviewed
 literature as exploratory when no review manifest is supplied. Otherwise its reviewed
 manifest/context requirements still apply. The research workspace never approves evidence.
 
-Claude receives a bounded evidence bundle. The service validates narrative claim,
+The drafting model (Nebius by default) receives a bounded evidence bundle. The service validates narrative claim,
 evidence, path and rule identifiers and their relationships. Invalid citations cannot
 be presented as a generated validated draft. Synthesis failures preserve the deterministic
 analysis and show an explicit error. Species-filtered workspace results currently disable

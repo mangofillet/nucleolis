@@ -11,9 +11,9 @@ import httpx
 import pytest
 from openai import AsyncOpenAI
 
-from nucleolus.corroboration import cache, classify, fixtures, identity, rules, service
-from nucleolus.llm.settings import Settings
-from nucleolus.schemas.corroboration import ClaimCorroboration, CorroborationRequest, PassageClassification
+from nucleolis.corroboration import cache, classify, fixtures, identity, rules, service
+from nucleolis.llm.settings import Settings
+from nucleolis.schemas.corroboration import ClaimCorroboration, CorroborationRequest, PassageClassification
 
 
 # -- identity ---------------------------------------------------------------
