@@ -1,0 +1,115 @@
+/* Nucleolis brand theme.
+   Palette taken verbatim from the confirmed brand sheet. Every colour in the
+   app resolves through these tokens - no component should introduce a literal
+   hex. Font files are bundled by @fontsource, never fetched: the product
+   guarantees the page makes no network request. */
+
+:root {
+  /* --- brand palette (confirmed) ------------------------------------- */
+  --deep-ink: #0b121a;       /* primary text, key elements */
+  --midnight-navy: #0f1f2b;  /* hero backgrounds, brand depth */
+  --ocean-navy: #153445;     /* navigation, panels, strong surfaces */
+  --laboratory-white: #f8fafc; /* primary background, clean surfaces */
+  --mist-gray: #e6ebf0;      /* subtle backgrounds, section fills */
+  --steel-gray: #94a3b8;     /* icons, dividers - see note below */
+  --scientific-teal: #2e6f73;/* primary actions, highlights */
+  --data-glow: #d6eef0;      /* subtle highlights, visualisations */
+
+  /* The brand sheet assigns Steel Gray to secondary TEXT as well as icons and
+     dividers. At body sizes #94A3B8 on Laboratory White measures 2.6:1, which
+     fails WCAG AA (4.5:1). Steel Gray is kept for the non-text roles it does
+     serve, and secondary text uses a darkened variant at 5.1:1. This is a
+     deliberate deviation, recorded rather than silently applied. */
+  --steel-text: #56697c;
+
+  /* --- semantic surface tokens ---------------------------------------- */
+  --bg: var(--laboratory-white);
+  --panel: #ffffff;
+  --panel-sunken: var(--mist-gray);
+  --line: #dce3ea;
+  --line-strong: #c3cedb;
+  --ink: var(--deep-ink);
+  --muted: var(--steel-text);
+  --faint: var(--steel-gray);
+
+  /* dark chrome (navigation, rails, hero) */
+  --chrome: var(--ocean-navy);
+  --chrome-deep: var(--midnight-navy);
+  --chrome-ink: #eef4f8;
+  --chrome-muted: #9fb3c2;
+  --chrome-line: #244356;
+
+  /* --- action ---------------------------------------------------------- */
+  --action: var(--scientific-teal);
+  --action-hover: #255a5e;
+  --action-ink: #ffffff;
+  --action-soft: var(--data-glow);
+  --action-line: #b3d3d6;
+  --action-wash: #eef7f8;
+  --focus: #3d8f94;
+
+  /* --- evidence semantics ---------------------------------------------
+     Direction colour must never be the ONLY channel: every signed claim also
+     carries an arrow and an explicit ratio, because half the signed pairs in
+     this corpus are supported in both directions. */
+  --pos: #1b7f4b;
+  --pos-soft: #e6f4ec;
+  --pos-line: #b7dfc8;
+  --neg: #a8322a;
+  --neg-soft: #fbeae8;
+  --neg-line: #eec4bf;
+  --none: #7c8b9a;
+  --none-soft: #eef1f4;
+  --warn: #8a5a00;
+  --warn-soft: #fdf6e7;
+  --warn-line: #e6d5a8;
+
+  /* --- showcase axes: resilience vs damage ----------------------------- */
+  --resilience: #2e6f73;
+  --resilience-soft: #dff0f1;
+  --damage: #8a4038;
+  --damage-soft: #f7e7e4;
+
+  /* --- type ------------------------------------------------------------ */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow-panel: 0 1px 2px rgba(11, 18, 26, 0.05), 0 8px 24px rgba(11, 18, 26, 0.06);
+  --shadow-raised: 0 2px 4px rgba(11, 18, 26, 0.08), 0 16px 40px rgba(11, 18, 26, 0.1);
+
+  font-family: var(--font-sans);
+  color: var(--ink);
+  color-scheme: light;
+}
+
+/* Display type. The brand sheet types the wordmark and UI in IBM Plex Sans;
+   the hero in the reference design is set in a serif, so display headings use
+   IBM Plex Serif and everything else stays sans. */
+.display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection {
+  background: var(--data-glow);
+  color: var(--deep-ink);
+}

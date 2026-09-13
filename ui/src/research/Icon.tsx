@@ -17,6 +17,5 @@ const shapes: Record<string, string> = {
 export function Icon({ name, size = 19 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={shapes[name] ?? shapes.model} /></svg>;
 }
-export function Logo() {
-  return <svg width="36" height="40" viewBox="0 0 36 40" aria-hidden="true"><path d="M18 7v14L6 32m12-11 12 11" stroke="#217f84" strokeWidth="3" /><circle cx="18" cy="7" r="5" fill="#197d82" /><circle cx="18" cy="21" r="5" fill="#339fa0" /><circle cx="6" cy="32" r="5" fill="#197d82" /><circle cx="30" cy="32" r="5" fill="#197d82" /></svg>;
-}
+export { NucleolisMark, NucleolisLockup } from "../brand/Logo";
+export { NucleolisMark as Logo } from "../brand/Logo";

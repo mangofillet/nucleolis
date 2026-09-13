@@ -18,14 +18,15 @@ from nucleolus.graph import pathways as pathways_mod
 from nucleolus.graph import queries
 from nucleolus.api.simulation import router as simulation_router
 from nucleolus.api.research import router as research_router, research_question
+from nucleolus.api.axes import router as axes_router
 from nucleolus.schemas.research import ResearchResponse
 
 UI_DIST = config.REPO_ROOT / "ui" / "dist"
 
 app = FastAPI(
-    title="nucleolus",
+    title="Nucleolis",
     version="0.1.0",
-    description="Evidence-first literature research tool for ALS/FTD mechanisms",
+    description="Evidence-first literature research tool for brain ageing and cognitive maintenance",
 )
 
 app.add_middleware(
@@ -37,6 +38,7 @@ app.add_middleware(
 
 app.include_router(simulation_router)
 app.include_router(research_router)
+app.include_router(axes_router)
 app.post("/ask", response_model=ResearchResponse, tags=["research"])(research_question)
 
 _snapshot: queries.Snapshot | None = None

@@ -95,7 +95,70 @@ def validate(tables) -> list[str]:
     return problems
 
 
-def build(run_id=None, label=None):
+def apply_evidence_cap(tables, cap):
+    """Keep at most `cap` evidence records per claim; report what was dropped.
+
+    Capping trades the complete sentence trail for a snapshot small enough to
+    hold in memory. It must never quietly change what the tool *says*, so:
+
+      - Paper-level counts (support_count, n_papers, n_primary, n_retracted,
+        n_sentences) are computed by normalize over the FULL evidence set and
+        are left untouched. "41 papers" stays 41 papers.
+      - Every document row is kept, so dates, retraction status and the
+        sentence-inflation metric stay exact.
+      - Each affected claim records `evidence_total`, and the snapshot records
+        the cap, so the API can say "showing 10 of 214" instead of "10".
+
+    Selection is quality-first and deterministic: records carrying a quote and a
+    resolvable document come first, then by id, so the same normalized run and
+    the same cap always produce the same snapshot checksum.
+    """
+    if not cap or cap <= 0:
+        return tables, None
+
+    by_claim = {}
+    for row in tables["evidence"]:
+        by_claim.setdefault(row["claim_id"], []).append(row)
+
+    keep_ids = set()
+    claims_capped = 0
+    for claim_id, rows in by_claim.items():
+        if len(rows) <= cap:
+            keep_ids.update(r["id"] for r in rows)
+            continue
+        claims_capped += 1
+        rows.sort(key=lambda r: (r.get("quote") is None, r.get("document_id") is None, r["id"]))
+        keep_ids.update(r["id"] for r in rows[:cap])
+
+    dropped = len(tables["evidence"]) - len(keep_ids)
+    tables["evidence"] = [r for r in tables["evidence"] if r["id"] in keep_ids]
+    tables["provenance"] = [
+        r for r in tables["provenance"]
+        if r.get("evidence_id") is None or r["evidence_id"] in keep_ids
+    ]
+    for claim in tables["claims"]:
+        original = claim.get("evidence_ids", [])
+        retained = [e for e in original if e in keep_ids]
+        if len(retained) != len(original):
+            claim["evidence_total"] = len(original)
+            claim["evidence_capped"] = True
+        claim["evidence_ids"] = retained
+
+    report = {
+        "evidence_cap": cap,
+        "claims_capped": claims_capped,
+        "evidence_dropped": dropped,
+        "evidence_retained": len(tables["evidence"]),
+    }
+    print(
+        "[build] evidence cap " + str(cap) + " per claim: kept "
+        + str(report["evidence_retained"]) + ", dropped " + str(dropped)
+        + " across " + str(claims_capped) + " claims"
+    )
+    return tables, report
+
+
+def build(run_id=None, label=None, max_evidence_per_claim=None):
     data_root = config.data_dir()
     if run_id is None:
         latest = data_root / "normalized" / "LATEST"
@@ -105,6 +168,7 @@ def build(run_id=None, label=None):
 
     tables_path = data_root / "normalized" / run_id / "tables.json"
     tables = json.loads(tables_path.read_text(encoding="utf-8"))
+    tables, cap_report = apply_evidence_cap(tables, max_evidence_per_claim)
 
     print("[build] validating " + str(tables_path) + " ...")
     problems = validate(tables)
@@ -159,8 +223,11 @@ def build(run_id=None, label=None):
             "belief_median": tables["stats"].get("belief_median"),
             "belief_max": tables["stats"].get("belief_max"),
             "claims_with_obj_activity": tables["stats"].get("claims_with_obj_activity", 0),
+            "evidence_cap": (cap_report or {}).get("evidence_cap"),
+            "evidence_dropped_by_cap": (cap_report or {}).get("evidence_dropped", 0),
         },
         "enrichment": tables.get("enrichment"),
+        "evidence_cap": cap_report,
         "limitations": [
             "Claims are automatically extracted by upstream INDRA readers and "
             "databases. None has been reviewed by a domain scientist.",
@@ -173,7 +240,22 @@ def build(run_id=None, label=None):
             "INDRA belief is a statement assembly score, never a treatment "
             "probability. Compounding it across hops degrades quickly, which is "
             "why signed inference is capped at two hops.",
-        ],
+        ]
+        + (
+            [
+                "This snapshot stores at most "
+                + str(cap_report["evidence_cap"])
+                + " evidence records per claim ("
+                + str(cap_report["evidence_dropped"])
+                + " withheld across "
+                + str(cap_report["claims_capped"])
+                + " claims). Paper counts are computed over the full evidence "
+                "set and remain exact; the quoted sentences are a sample, not "
+                "the complete trail."
+            ]
+            if cap_report
+            else []
+        ),
     }
 
     body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -201,8 +283,17 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Build a validated snapshot")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--label", default=None, help="snapshot id, e.g. demo_frozen")
+    parser.add_argument(
+        "--max-evidence-per-claim",
+        type=int,
+        default=None,
+        help=(
+            "keep at most N evidence records per claim. Omit for the full trail. "
+            "Paper counts stay exact either way; only stored sentences are sampled."
+        ),
+    )
     args = parser.parse_args(argv)
-    build(args.run_id, args.label)
+    build(args.run_id, args.label, args.max_evidence_per_claim)
     return 0
 
 

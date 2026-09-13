@@ -1,37 +1,190 @@
-# Human seed set - EXECUTION_PLAN.md s1
-# Versioned, reviewed list. Expansion cap: 150 genes, each with a recorded rationale.
-version: 1
-recorded_at: "2026-09-12"
-disease_focus: "ALS/FTD"
+# Human seed set - brain ageing and cognitive maintenance
+# Versioned, reviewed list. Expansion cap: 500 genes, each with a recorded rationale.
+version: 3
+recorded_at: "2026-09-13"
+disease_focus: "Brain ageing and cognitive maintenance (ALS/FTD and vascular/neuroimmune contributions included)"
 selection_rationale: >
-  Initial seed set supplied in EXECUTION_PLAN.md s1 as the core ALS/FTD genetic
-  loci. Not derived from any automated ranking. Expansion beyond this set
-  requires a recorded rationale per gene and a version bump.
+  v1 scoped the tool to ALS/FTD only. v2 widens it to the mechanisms that govern
+  cognitive ageing: proteostasis and autophagy, mitochondrial biogenesis, cellular
+  senescence, neuroinflammation, and insulin/IGF signalling.
+
+  Note the constraint that forced a curated list. MeSH "Aging" (D000375) returns
+  ZERO genes from INDRA CoGEx, as do Parkinson Disease and Lewy Body Disease, so
+  the ageing axis cannot be obtained by disease association alone. The genes in
+  the `ageing_resilience` block below were each absent from every brain/cognition
+  disease list we query, and are added here explicitly rather than acquired by
+  accident. Each carries its own rationale, per the v1 policy.
+
+  These seeds are a starting set for expansion, not a claim about relative
+  importance. No automated ranking produced this list.
 
 seeds:
+  # --- v1: ALS/FTD genetic loci (retained) ------------------------------
   - symbol: TARDBP
     hgnc_id: "11571"
+    axis: proteostasis
     rationale: "TDP-43 proteinopathy; defining pathology of sporadic ALS and FTLD-TDP"
   - symbol: C9orf72
     hgnc_id: "28337"
+    axis: proteostasis
     rationale: "Most common genetic cause of familial ALS and FTD (repeat expansion)"
   - symbol: FUS
     hgnc_id: "4010"
+    axis: proteostasis
     rationale: "RNA-binding protein; ALS-FUS, juvenile-onset forms"
   - symbol: SOD1
     hgnc_id: "11179"
+    axis: oxidative_stress
     rationale: "First identified ALS gene; established toxic gain-of-function model"
   - symbol: TBK1
     hgnc_id: "11584"
+    axis: autophagy
     rationale: "Autophagy/innate immune kinase; ALS-FTD loss-of-function variants"
   - symbol: OPTN
     hgnc_id: "17142"
+    axis: autophagy
     rationale: "Autophagy receptor; ALS variants, converges with TBK1 biology"
   - symbol: SQSTM1
     hgnc_id: "11280"
+    axis: autophagy
     rationale: "p62 autophagy receptor; ALS/FTD and Paget disease variants"
+
+  # --- v2: ageing resilience axis --------------------------------------
+  # Every gene below was checked against all 11 brain/cognition MeSH gene lists
+  # on 2026-09-13 and found in NONE of them. Without this block the graph has no
+  # mechanistic account of why cognition is maintained rather than merely lost.
+  - symbol: MTOR
+    hgnc_id: "3942"
+    axis: nutrient_sensing
+    rationale: "Central nutrient sensor; mTOR inhibition is the most replicated lifespan intervention and gates autophagy"
+  - symbol: FOXO3
+    hgnc_id: "3821"
+    axis: nutrient_sensing
+    rationale: "Most reproducibly human-longevity-associated locus after APOE; stress-resistance transcription factor"
+  - symbol: PRKAA1
+    hgnc_id: "9376"
+    axis: nutrient_sensing
+    rationale: "AMPK catalytic subunit; energy-stress sensor opposing mTOR, target of metformin and exercise mimetics"
+  - symbol: AKT1
+    hgnc_id: "391"
+    axis: nutrient_sensing
+    rationale: "Insulin/IGF signal transducer linking metabolic state to neuronal survival; upstream of FOXO3 and mTOR"
+  - symbol: PPARGC1A
+    hgnc_id: "9237"
+    axis: mitochondrial
+    rationale: "PGC-1alpha, master regulator of mitochondrial biogenesis; declines with age in brain tissue"
+  - symbol: SIRT1
+    hgnc_id: "14929"
+    axis: mitochondrial
+    rationale: "NAD+-dependent deacetylase coupling metabolic state to chromatin; principal caloric-restriction effector"
+  - symbol: SIRT3
+    hgnc_id: "14931"
+    axis: mitochondrial
+    rationale: "Mitochondrial sirtuin controlling oxidative capacity and ROS detoxification"
+  - symbol: NAMPT
+    hgnc_id: "30092"
+    axis: mitochondrial
+    rationale: "Rate-limiting enzyme of NAD+ salvage; NAD+ decline is a proposed driver of brain ageing"
+  - symbol: TFEB
+    hgnc_id: "11753"
+    axis: autophagy
+    rationale: "Master transcriptional regulator of autophagy and lysosomal biogenesis; downstream of mTOR"
+  - symbol: ATG7
+    hgnc_id: "16935"
+    axis: autophagy
+    rationale: "Core autophagy conjugation enzyme; neuronal knockout produces neurodegeneration directly"
+  - symbol: BECN1
+    hgnc_id: "1034"
+    axis: autophagy
+    rationale: "Beclin-1, autophagosome nucleation; reduced in aged and Alzheimer brain"
+  - symbol: NFE2L2
+    hgnc_id: "7782"
+    axis: oxidative_stress
+    rationale: "NRF2, master antioxidant-response transcription factor; principal oxidative-defence arm"
+  - symbol: NLRP3
+    hgnc_id: "16400"
+    axis: neuroinflammation
+    rationale: "Inflammasome sensor driving IL-1beta; central to age-related sterile neuroinflammation"
+  - symbol: CX3CR1
+    hgnc_id: "2558"
+    axis: neuroinflammation
+    rationale: "Microglial fractalkine receptor mediating neuron-microglia restraint; lost with ageing"
+  - symbol: CDKN2A
+    hgnc_id: "1787"
+    axis: senescence
+    rationale: "p16INK4a, the canonical senescence marker; accumulates in aged brain and is the senolytic target"
+  - symbol: TERT
+    hgnc_id: "11730"
+    axis: senescence
+    rationale: "Telomerase catalytic subunit; telomere attrition is a primary hallmark of ageing"
+  - symbol: KL
+    hgnc_id: "6344"
+    axis: senescence
+    rationale: "Klotho; loss produces accelerated-ageing phenotype, elevation enhances cognition in model systems"
+  - symbol: BDNF
+    hgnc_id: "1033"
+    axis: plasticity
+    rationale: "Principal neurotrophin for synaptic plasticity and hippocampal function; the main exercise-responsive effector"
+  - symbol: CREB1
+    hgnc_id: "2345"
+    axis: plasticity
+    rationale: "Transcription factor required for long-term memory consolidation; converges downstream of BDNF"
+  - symbol: IGF1
+    hgnc_id: "5464"
+    axis: nutrient_sensing
+    rationale: "Growth-factor arm of the insulin/IGF axis; directionally contested in ageing, which makes it a useful test case"
+
+  # --- v3: microglial / neuroimmune axis --------------------------------
+  # Added 2026-09-13. None of these appear in ANY of the 24 brain/cognition
+  # MeSH gene lists we query, yet CSF1/IL34->CSF1R is the signalling axis that
+  # keeps microglia alive, and complement-mediated synapse pruning is a leading
+  # account of cognitive decline. Without them the damage side has no microglial
+  # mechanism at all, only downstream inflammatory markers.
+  - symbol: CSF1
+    hgnc_id: "2432"
+    axis: neuroimmune
+    rationale: "Microglial survival/proliferation ligand for CSF1R; the axis targeted by CSF1R inhibitors that deplete microglia"
+  - symbol: IL34
+    hgnc_id: "28529"
+    axis: neuroimmune
+    rationale: "Second CSF1R ligand, the one that maintains microglia specifically in brain; distinguishes CNS from peripheral macrophage biology"
+  - symbol: CSF1R
+    hgnc_id: "2433"
+    axis: neuroimmune
+    rationale: "Receptor for CSF1 and IL34; required for microglial survival, mutated in adult-onset leukoencephalopathy"
+  - symbol: TYROBP
+    hgnc_id: "12449"
+    axis: neuroimmune
+    rationale: "DAP12, the TREM2 signalling adaptor; central node of the microglial activation network in Alzheimer's"
+  - symbol: P2RY12
+    hgnc_id: "18124"
+    axis: neuroimmune
+    rationale: "Homeostatic microglial marker, lost on activation; the cleanest readout of microglial state change"
+  - symbol: AIF1
+    hgnc_id: "352"
+    axis: neuroimmune
+    rationale: "IBA1, the standard histological marker of microglial activation in ageing brain"
+  - symbol: C1QA
+    hgnc_id: "1241"
+    axis: neuroimmune
+    rationale: "Initiates the complement cascade that tags synapses for microglial pruning; drives synapse loss in ageing"
+  - symbol: C3
+    hgnc_id: "1318"
+    axis: neuroimmune
+    rationale: "Complement C3, the effector of microglia-mediated synapse elimination"
+  - symbol: ITGAM
+    hgnc_id: "6149"
+    axis: neuroimmune
+    rationale: "CD11b, complement receptor 3 on microglia; the phagocytic arm of synapse removal"
 
 # Resolution policy: hgnc_id values above are asserted from the seed brief and
 # MUST be verified against the HGNC REST API during A4 before use as node IDs.
 # A mismatch is a hard failure, not a silent correction.
+# All v2 ids were resolved from the HGNC REST API on 2026-09-13.
 verify_ids_against: "https://rest.genenames.org/fetch/symbol/{symbol}"
+
+# Axes used by the resilience/damage showcase view. A gene may inform more than
+# one; the label here records the reason it was seeded, not an exclusive claim.
+axes:
+  resilience: [autophagy, mitochondrial, plasticity, nutrient_sensing]
+  damage: [senescence, neuroinflammation, neuroimmune, oxidative_stress, proteostasis]

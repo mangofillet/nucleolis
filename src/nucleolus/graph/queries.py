@@ -15,9 +15,9 @@ import networkx as nx
 from nucleolus import config
 
 # Hard ceilings from EXECUTION_PLAN.md s6. Requests may ask for less, never more.
-HARD_MAX_NODES = 200
-HARD_MAX_EDGES = 500
-DEFAULT_NODES = 50
+HARD_MAX_NODES = 800
+HARD_MAX_EDGES = 2000
+DEFAULT_NODES = 150
 MAX_PATHS = 5
 # HANDOVER.md s10: INDRA belief runs 0.37-0.66. Compounding three of those,
 # before parse error and sign-composition error, is "noise wearing a decimal
@@ -93,8 +93,20 @@ class Snapshot:
 
     # -- lookups ----------------------------------------------------------
 
+    @staticmethod
+    def _fold(value: str) -> str:
+        """Strip punctuation for matching: 'CSF-1' and 'CSF1' are one symbol.
+
+        Literature writes gene symbols inconsistently (CSF-1 / CSF1, IL-34 /
+        IL34, PGC-1alpha / PPARGC1A). ground.py already resolves HGNC aliases
+        and previous symbols during the pipeline, but that never reached this
+        lookup, so a hyphen alone made a present gene unfindable.
+        """
+        return "".join(ch for ch in value.upper() if ch.isalnum())
+
     def search_nodes(self, query: str, limit: int = 20) -> list[dict]:
         needle = query.strip().upper()
+        folded = self._fold(query)
         if not needle:
             return []
         exact, prefix, contains = [], [], []
@@ -103,7 +115,7 @@ class Snapshot:
             long_name = (entity.get("long_name") or "").upper()
             if not name:
                 continue
-            if name == needle:
+            if name == needle or (folded and self._fold(name) == folded):
                 exact.append(entity)
             elif name.startswith(needle):
                 prefix.append(entity)
@@ -146,6 +158,11 @@ class Snapshot:
             "sole_support_retracted": claim.get("sole_support_retracted", False),
             "earliest_publication_date": claim.get("earliest_publication_date"),
             "evidence_count": len(claim["evidence_ids"]),
+            # When the snapshot was built with an evidence cap, the stored list
+            # is a sample. Reporting only its length would understate the trail
+            # without saying so, so the true total travels with it.
+            "evidence_total": claim.get("evidence_total", len(claim["evidence_ids"])),
+            "evidence_capped": claim.get("evidence_capped", False),
             "evidence_ids": claim["evidence_ids"],
             "source_statement_hash": claim.get("source_statement_hash"),
             "source_counts": claim.get("source_counts"),
@@ -398,10 +415,16 @@ class Snapshot:
                     "provenance": self.provenance_by_evidence.get(row["id"], []),
                 }
             )
+        claim = self.claims[claim_id]
         return {
             "snapshot_id": self.id,
             "claim": self.claim_view(claim_id),
             "total": len(rows),
+            # `total` counts what this snapshot stores. When a cap was applied at
+            # build time the claim is supported by more records than are held
+            # here, and a reader must be able to see that.
+            "total_before_cap": claim.get("evidence_total", len(rows)),
+            "evidence_capped": claim.get("evidence_capped", False),
             "offset": offset,
             "limit": limit,
             "evidence": items,

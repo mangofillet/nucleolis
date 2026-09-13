@@ -19,6 +19,8 @@ import httpx
 from nucleolus import config
 from nucleolus.pipeline.sources.cogex import (
     REL_HASH,
+    REL_SOURCE,
+    REL_TARGET,
     REL_TYPE,
     CogexClient,
     CogexError,
@@ -27,10 +29,81 @@ from nucleolus.pipeline.sources.cogex import (
 HGNC_FETCH = "https://rest.genenames.org/fetch/symbol/{symbol}"
 
 # MeSH descriptors used to widen the node set beyond the human seed list.
+# Measured 2026-09-13 against CoGEx. Counts are genes returned per descriptor.
+# MeSH "Aging" (D000375), Parkinson Disease (D010300) and Lewy Body Disease
+# (D020961) all return ZERO genes - the ageing axis comes from seeds.yaml
+# instead, not from disease association.
 DEFAULT_DISEASES = [
+    # core cognitive ageing / neurodegeneration
+    ("mesh", "D000544", "Alzheimer Disease"),
+    ("mesh", "D009410", "Nerve Degeneration"),
+    ("mesh", "D008569", "Memory Disorders"),
+    ("mesh", "D019636", "Neurodegenerative Diseases"),
+    ("mesh", "D003072", "Cognition"),
+    ("mesh", "D003704", "Dementia"),
+    ("mesh", "D060825", "Cognitive Dysfunction"),
+    ("mesh", "D001927", "Brain Diseases"),
+    ("mesh", "D001284", "Atrophy"),
     ("mesh", "D000690", "Amyotrophic Lateral Sclerosis"),
     ("mesh", "D057180", "Frontotemporal Dementia"),
+    ("mesh", "D006816", "Huntington Disease"),
+    # vascular contribution to cognitive decline
+    ("mesh", "D016649", "Dementia, Vascular"),
+    ("mesh", "D020521", "Stroke"),
+    ("mesh", "D002545", "Brain Ischemia"),
+    ("mesh", "D000860", "Hypoxia"),
+    ("mesh", "D000855", "Anoxia"),
+    # neuroinflammation / glia / white matter
+    ("mesh", "D007249", "Inflammation"),
+    ("mesh", "D009103", "Multiple Sclerosis"),
+    ("mesh", "D005902", "Gliosis"),
+    ("mesh", "D009837", "Oligodendroglia"),
+    ("mesh", "D007964", "Leukoencephalopathy"),
+    ("mesh", "D018476", "Oxidative Stress"),
+    # late-life depression is a recognised dementia risk factor
+    ("mesh", "D003863", "Depression"),
 ]
+
+# CoGEx rejects indra_subnetwork_meta with >=400 nodes ("Number of nodes must be
+# less than 400"), and the endpoint returns only the subgraph INDUCED among the
+# nodes it is given. Splitting the set and unioning the results would therefore
+# silently drop every edge that crosses a chunk boundary. Querying all chunk
+# PAIRS instead keeps the result identical to one whole-set call: any edge has
+# both endpoints in some pair. k chunks cost k(k+1)/2 calls.
+SUBNETWORK_NODE_LIMIT = 399
+
+
+def _subnetwork_all_pairs(client, nodes, limit=SUBNETWORK_NODE_LIMIT):
+    """Induced relations among `nodes`, chunked to respect the server cap."""
+    if len(nodes) <= limit:
+        return client.subnetwork_meta(nodes)
+
+    import math
+
+    chunk_count = math.ceil(2 * len(nodes) / limit)
+    size = math.ceil(len(nodes) / chunk_count)
+    chunks = [nodes[i : i + size] for i in range(0, len(nodes), size)]
+    calls = len(chunks) * (len(chunks) + 1) // 2
+    print(
+        "[retrieve] node set exceeds the "
+        + str(limit)
+        + "-node server cap: querying "
+        + str(len(chunks))
+        + " chunks as "
+        + str(calls)
+        + " pairwise calls"
+    )
+    seen, merged = set(), []
+    for i in range(len(chunks)):
+        for j in range(i, len(chunks)):
+            batch = chunks[i] if i == j else chunks[i] + chunks[j]
+            for row in client.subnetwork_meta(batch):
+                key = (row[REL_SOURCE], row[REL_TARGET], row[REL_TYPE], row[REL_HASH])
+                if key not in seen:
+                    seen.add(key)
+                    merged.append(row)
+    return merged
+
 
 STATUS_FLAG = {
     "verified": "ok",
@@ -86,7 +159,7 @@ def verify_seed_ids(seed_list):
     return resolved, failures
 
 
-def run(max_nodes, fetch_evidence, diseases, evidence_for="signed"):
+def run(max_nodes, fetch_evidence, diseases, evidence_for="signed", max_evidence_per_statement=None):
     started_at = dt.datetime.now(dt.timezone.utc)
     run_id = started_at.strftime("%Y%m%dT%H%M%SZ")
     out_dir = config.data_dir() / "raw" / run_id
@@ -165,7 +238,7 @@ def run(max_nodes, fetch_evidence, diseases, evidence_for="signed"):
 
         # --- 3. induced subnetwork ---------------------------------------
         t0 = time.monotonic()
-        relations = client.subnetwork_meta(nodes)
+        relations = _subnetwork_all_pairs(client, nodes)
         elapsed = time.monotonic() - t0
         print("[retrieve] " + str(len(relations)) + " relations in " + format(elapsed, ".2f") + "s")
         (out_dir / "subnetwork.json").write_text(json.dumps(relations, indent=1), encoding="utf-8")
@@ -188,16 +261,29 @@ def run(max_nodes, fetch_evidence, diseases, evidence_for="signed"):
         # user can click must be inspectable, whatever its predicate.
         evidence_targets = relations if evidence_for == "all" else signed
         if fetch_evidence and evidence_targets:
-            hashes = [str(r[REL_HASH]) for r in evidence_targets]
-            print("[retrieve] fetching evidence for " + str(len(hashes)) + " statements ...")
-            for index, stmt_hash in enumerate(hashes, start=1):
+            hashes = list(dict.fromkeys(str(r[REL_HASH]) for r in evidence_targets))
+            print(
+                "[retrieve] fetching evidence for " + str(len(hashes))
+                + " unique statements (" + str(len(evidence_targets)) + " relations) ..."
+            )
+            BATCH = 200
+            for start in range(0, len(hashes), BATCH):
+                chunk = hashes[start : start + BATCH]
                 try:
-                    evidence[stmt_hash] = client.evidences_for_hash(stmt_hash)
+                    got = client.evidences_for_hashes(chunk)
                 except CogexError as exc:
-                    evidence[stmt_hash] = []
-                    print("           hash " + stmt_hash + " FAILED: " + str(exc)[:120])
-                if index % 50 == 0 or index == len(hashes):
-                    print("           " + str(index) + "/" + str(len(hashes)))
+                    got = {}
+                    print("           batch FAILED: " + str(exc)[:120])
+                for stmt_hash in chunk:
+                    records = got.get(stmt_hash, [])
+                    # Storing every record for the most-cited statements is what
+                    # makes the raw set unmanageable: the distribution is median
+                    # 1, p90 11, max ~8000. A cap here leaves the long tail
+                    # untouched and is recorded in the manifest, never silent.
+                    if max_evidence_per_statement:
+                        records = records[:max_evidence_per_statement]
+                    evidence[stmt_hash] = records
+                print("           " + str(min(start + BATCH, len(hashes))) + "/" + str(len(hashes)))
         (out_dir / "evidence.json").write_text(json.dumps(evidence, indent=1), encoding="utf-8")
 
         call_log = list(client.call_log)
@@ -242,6 +328,7 @@ def run(max_nodes, fetch_evidence, diseases, evidence_for="signed"):
             "evidence_with_quote": with_text,
             "evidence_with_pmid": with_pmid,
             "evidence_scope": evidence_for,
+            "max_evidence_per_statement": max_evidence_per_statement,
         },
         "http_calls": len(call_log),
         "call_log_tail": call_log[-20:],
@@ -269,8 +356,14 @@ def run(max_nodes, fetch_evidence, diseases, evidence_for="signed"):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Pull an ALS/FTD subnetwork from INDRA CoGEx")
-    parser.add_argument("--max-nodes", type=int, default=60)
+    parser.add_argument("--max-nodes", type=int, default=500)
     parser.add_argument("--no-evidence", action="store_true", help="skip evidence fetch")
+    parser.add_argument(
+        "--max-evidence-per-statement",
+        type=int,
+        default=None,
+        help="store at most N evidence records per statement (default: all)",
+    )
     parser.add_argument(
         "--evidence-for",
         choices=["signed", "all"],
@@ -283,6 +376,7 @@ def main(argv=None):
         fetch_evidence=not args.no_evidence,
         diseases=DEFAULT_DISEASES,
         evidence_for=args.evidence_for,
+        max_evidence_per_statement=args.max_evidence_per_statement,
     )
     return 0
 
