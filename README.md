@@ -7,8 +7,8 @@ opens onto the exact sentences and PubMed papers behind it. Where papers disagre
 both sides instead of averaging them away.
 
 > Built for the **Stockholm AI × Longevity hackathon** (Nebius Token Factory track).
-> Repository: [`0xIkra/nucleolus`](https://github.com/0xIkra/nucleolus). The folder is named
-> `nucleolus`; the product and Python package are named `nucleolis`.
+> Repository: [`0xIkra/nucleolis`](https://github.com/0xIkra/nucleolis). Product, repository and
+> Python package are all named `nucleolis`.
 
 ![Research workspace: a plain-language perturbation question answered with signed routes, both directions kept visible](docs/screenshots/research-workspace.png)
 

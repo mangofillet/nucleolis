@@ -1,6 +1,6 @@
 # Changes on this branch
 
-Work done on top of `0xIkra/nucleolus` @ `2a06bad`. Two themes: **widen the scope
+Work done on top of `0xIkra/nucleolis` @ `2a06bad`. Two themes: **widen the scope
 from ALS/FTD to brain ageing**, and **reskin to the Nucleolis brand**. Along the
 way four upstream bugs turned up; they are described below with the evidence.
 
