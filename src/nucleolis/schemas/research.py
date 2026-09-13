@@ -9,7 +9,7 @@ from nucleolis.schemas.simulation import Model, Sign, SnapshotIdentity
 class ResearchRequest(Model):
     query: str = Field(min_length=1, max_length=2000)
     species: Literal["all", "human", "mouse", "rat"] = "all"
-    max_paths: int = Field(default=8, ge=2, le=12)
+    max_paths: int = Field(default=24, ge=2, le=60)
 
 
 class ResearchPlan(Model):
@@ -69,9 +69,9 @@ class ResearchResponse(Model):
     source_id: str | None = None
     target_id: str | None = None
     species: str
-    nodes: list[ResearchNode] = Field(default_factory=list, max_length=24)
-    links: list[ResearchLink] = Field(default_factory=list, max_length=48)
-    paths: list[ResearchPath] = Field(default_factory=list, max_length=12)
+    nodes: list[ResearchNode] = Field(default_factory=list, max_length=80)
+    links: list[ResearchLink] = Field(default_factory=list, max_length=160)
+    paths: list[ResearchPath] = Field(default_factory=list, max_length=60)
     lanes: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)

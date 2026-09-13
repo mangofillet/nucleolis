@@ -20,6 +20,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import time
 import pathlib
 import sys
 
@@ -35,6 +36,10 @@ from nucleolis.pipeline.sources.cogex import (
 )
 
 SCHEMA_VERSION = 1
+# rest.genenames.org has no published rate limit; unthrottled sequential
+# requests were observed failing at ~13%. Pace them.
+HGNC_MIN_INTERVAL = 0.12
+
 HGNC_BY_ID = "https://rest.genenames.org/fetch/hgnc_id/HGNC:{accession}"
 
 
@@ -68,17 +73,36 @@ def resolve_entity_names(curies, cache_path):
     missing = [c for c in curies if c not in cache]
     if missing:
         print("[normalize] resolving " + str(len(missing)) + " entity names via HGNC ...")
+        unresolved_transport = []
         with httpx.Client(timeout=30.0, headers={"Accept": "application/json"}) as client:
             for index, curie in enumerate(missing, start=1):
                 namespace, accession = parse_curie(curie)
                 if namespace != "HGNC":
                     cache[curie] = {"preferred_name": None, "entity_type": "unknown"}
                     continue
-                try:
-                    response = client.get(HGNC_BY_ID.format(accession=accession))
-                    docs = response.json().get("response", {}).get("docs", [])
-                except Exception:
-                    docs = []
+                # A transport failure and "HGNC has no such id" are different
+                # facts. Collapsing both into an empty doc list, then writing
+                # that to a PERSISTENT cache, makes one timeout permanent: the
+                # gene stays nameless on every future run, invisible to search
+                # and blank in the UI. Only a clean HTTP 200 may record a
+                # negative; anything else is retried and then left uncached.
+                docs, answered = [], False
+                for attempt in range(4):
+                    if attempt:
+                        time.sleep(0.4 * (2 ** attempt))
+                    try:
+                        response = client.get(HGNC_BY_ID.format(accession=accession))
+                    except Exception:
+                        continue
+                    if response.status_code == 200:
+                        try:
+                            docs = response.json().get("response", {}).get("docs", [])
+                            answered = True
+                            break
+                        except ValueError:
+                            continue
+                    if response.status_code not in (429, 500, 502, 503, 504):
+                        break
                 if docs:
                     cache[curie] = {
                         "preferred_name": docs[0].get("symbol"),
@@ -86,11 +110,22 @@ def resolve_entity_names(curies, cache_path):
                         "entity_type": "gene_protein",
                         "taxon_id": 9606,
                     }
-                else:
-                    # Unresolved stays unresolved - never invent a name.
+                elif answered:
+                    # HGNC genuinely has no record. Unresolved stays
+                    # unresolved - never invent a name.
                     cache[curie] = {"preferred_name": None, "entity_type": "unresolved"}
+                else:
+                    unresolved_transport.append(curie)
+                time.sleep(HGNC_MIN_INTERVAL)
                 if index % 25 == 0:
                     print("           " + str(index) + "/" + str(len(missing)))
+        if unresolved_transport:
+            # Deliberately NOT cached: these are retryable failures, not facts.
+            print("[normalize] WARNING: " + str(len(unresolved_transport))
+                  + " ids could not be reached at HGNC and were left uncached"
+                  + " (they will be retried next run): "
+                  + ", ".join(unresolved_transport[:8])
+                  + ("..." if len(unresolved_transport) > 8 else ""))
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(json.dumps(cache, indent=1), encoding="utf-8")
     return cache

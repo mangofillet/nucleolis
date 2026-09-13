@@ -61,6 +61,14 @@ VERBS = r"activates?|inhibits?|regulates?|affects?|increases?|decreases?|reduces
 NEG = {"inhibit", "inhibits", "decrease", "decreases", "reduce", "reduces", "suppress", "suppresses"}
 
 
+
+# Display ceilings for the mechanism view. These bound how much of the snapshot
+# one answer may draw, independent of how large the snapshot is - a question
+# answered with 300 nodes is not an answer. They were previously inline literals
+# (24 / 48), which made the view look data-bound when it was not.
+MAX_GRAPH_NODES = 80
+MAX_GRAPH_CLAIMS = 160
+
 def sign_of(verb: str) -> int | None:
     if verb.lower() in NEG:
         return -1
@@ -381,7 +389,8 @@ def analyze(request: ResearchRequest, snap: Snapshot, parsed: ResearchPlan, pars
     for row in ordered:
         if len(chosen) >= request.max_paths:
             break
-        if len(node_ids | set(row[0])) > 24 or len(claim_ids | set(row[1])) > 48:
+        if (len(node_ids | set(row[0])) > MAX_GRAPH_NODES
+                or len(claim_ids | set(row[1])) > MAX_GRAPH_CLAIMS):
             continue
         chosen.append(row)
         node_ids.update(row[0])

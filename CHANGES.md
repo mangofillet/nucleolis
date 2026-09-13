@@ -127,13 +127,33 @@ median 1    p90 11    p99 107    max 7,955
 The distribution is extremely skewed, so a cap costs almost nothing for the
 typical statement and removes most of the bulk. Two independent knobs:
 
-- `retrieve.py --max-evidence-per-statement N` — caps at fetch, recorded in the
-  run manifest.
-- `build.py --max-evidence-per-claim N` — caps at snapshot build. Raw and
-  normalized data stay complete, so a fuller snapshot can be rebuilt **without
-  re-fetching from INDRA**.
+- `build.py --max-evidence-per-claim N` — **safe.** Caps at snapshot build. Raw
+  and normalized data stay complete, so a fuller snapshot can be rebuilt
+  **without re-fetching from INDRA**.
+- `retrieve.py --max-evidence-per-statement N` — **distorts paper counts. Do not
+  use it for a snapshot anyone will read numbers off.** See the warning below.
 
-**Capping never changes what the tool says:**
+### The two caps are not equivalent
+
+The build cap is safe because normalize computes every paper-level count over the
+full evidence set *before* anything is dropped. The fetch cap removes records
+before normalize ever sees them, so the counts are computed from truncated data
+and are silently understated.
+
+Measured on this corpus, same node set, cap 12 at fetch vs no cap:
+
+| | uncapped fetch | fetch cap 12 |
+|---|---|---|
+| max `support_count` | 5,064 | 343 |
+| mean `support_count` | 8.4 | 3.0 |
+
+This is not a cosmetic loss. Truncation hits concentrated majority support
+hardest, so it changes conclusions: `SIRT1 -> NLRP3` reads **44up/124down,
+dominant** on an uncapped fetch and **20up/19down, contested** at fetch cap 12.
+The direction classification flips. The shipped snapshot is built with an
+uncapped fetch and the build cap only.
+
+**The build cap never changes what the tool says:**
 
 - Paper-level counts (`support_count`, `n_papers`, `n_primary`, `n_retracted`,
   `n_sentences`) are computed by normalize over the full set and are untouched.
@@ -259,11 +279,21 @@ secondary text uses a darkened `#56697C` at 5.1:1.
    it answers one typed question via bounded path search (`max_paths`), it is not
    a map. The large graph is at `#explorer`.
 
-5. **NFE2L2 and KL were absent from the 414-entity snapshot** despite being
-   seeded and HGNC-verified: they had zero relations with any other node in that
-   universe. For NRF2, the master antioxidant regulator, that is surprising enough
-   to be worth treating as a fact about CoGEx coverage rather than about biology.
-   The wider universe may resolve it.
+5. **Fixed: 13% of entities had no name.** NFE2L2 and KL appeared "absent" from
+   the snapshot. They were not absent — NFE2L2 has 2,360 relations and is the
+   largest hub in the graph. They had `preferred_name: None`, which makes an
+   entity invisible to `search_nodes` and blank in the UI while still sitting in
+   the graph with all its edges. 76 of 587 entities were in this state,
+   **including APOE**.
+
+   Root cause in `normalize.py`: a transport failure and "HGNC has no such id"
+   both produced an empty doc list, and the result was written to a *persistent*
+   disk cache. One timeout therefore made a gene permanently nameless on every
+   future run. There was no retry and no throttle at all on 173+ sequential
+   requests to `rest.genenames.org`, unlike the CoGEx and PubMed clients which
+   both pace themselves. Now retried with backoff, throttled, and a negative is
+   cached only on a clean HTTP 200; transport failures are reported and left
+   uncached. Re-running took the nameless count from 76 to 0.
 
 6. **Licensing is still unresolved**, as `KNOWN_LIMITATIONS.md` §9 says. Nothing
    here changes that, and the repo still has no LICENSE file.
